@@ -1,5 +1,6 @@
 #ifndef PALLADIUM_LEXER_H_
 #define PALLADIUM_LEXER_H_
+#include <istream>
 #include <string>
 
 enum class TokenKind {
@@ -26,5 +27,20 @@ enum class TokenKind {
 namespace detail {
 auto to_string(TokenKind tk) -> std::string;
 }
+
+class Token final {
+public:
+  Token(const TokenKind &tk, std::string value)
+      : _kind(tk), _value(std::move(value)) {}
+
+  auto operator==(const TokenKind &rhs) -> bool { return _kind == rhs; }
+
+  auto kind() const -> TokenKind { return _kind; }
+  auto value() const -> const std::string & { return _value; }
+
+private:
+  TokenKind _kind;
+  std::string _value;
+};
 
 #endif
