@@ -1,0 +1,11 @@
+//
+// Created by Michael Burzan on 05.07.20.
+//
+
+#ifndef PURGE_PURGE_COMMON_HPP
+#define PURGE_PURGE_COMMON_HPP
+
+#define PURGE_UNIQUE_NAME_REC(X,LINE) X##LINE
+#define  PURGE_UNIQUE_NAME(X) PURGE_UNIQUE_NAME_REC(X,__LINE__)
+
+#endif //PURGE_PURGE_COMMON_HPP
