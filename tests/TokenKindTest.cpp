@@ -10,9 +10,17 @@ SIMPLE_TEST_CASE(TokenKindConverter) {
       "OP_MULT",    "OP_DIV", "OP_SET",  "OP_EQ",  "OP_NEQ", "END_OF_FILE",
   };
 
-  for (int i = 0; i < static_cast<int>(TokenKind::MAX_TOKEN_KIND); ++i) {
+  constexpr std::size_t max_token_kind =
+      static_cast<std::size_t>(TokenKind::MAX_TOKEN_KIND);
+
+  for (std::size_t i = 0; i < max_token_kind; ++i) {
     REQUIRE(detail::to_string(static_cast<TokenKind>(i)) == tests[i]);
   }
-  REQUIRE(detail::to_string(TokenKind::MAX_TOKEN_KIND) ==
-          "Token type not in map");
+  const std::string failure_text = "Token type not in map";
+
+  REQUIRE(detail::to_string(TokenKind::MAX_TOKEN_KIND) == failure_text);
+
+  for (std::size_t i = max_token_kind; i < max_token_kind + 10; ++i) {
+    REQUIRE(detail::to_string(static_cast<TokenKind>(i)) == failure_text);
+  }
 }

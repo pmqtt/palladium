@@ -44,6 +44,7 @@ endif()
 add_executable("${CMAKE_PROJECT_NAME}" $<TARGET_OBJECTS:OBJECT_LIB>)
 
 add_subdirectory(src)
+enable_testing()
 add_subdirectory(tests)
 
 
