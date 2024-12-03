@@ -24,6 +24,8 @@ enum class TokenKind {
   MAX_TOKEN_KIND,
 };
 
+auto operator<<(std::ostream &os, const TokenKind tk) -> std::ostream &;
+
 namespace detail {
 auto to_string(TokenKind tk) -> std::string;
 }
@@ -37,6 +39,9 @@ public:
 
   auto kind() const -> TokenKind { return _kind; }
   auto value() const -> const std::string & { return _value; }
+
+  friend auto operator<<(std::ostream &os, const Token &token)
+      -> std::ostream &;
 
 private:
   TokenKind _kind;

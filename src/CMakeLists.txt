@@ -2,8 +2,13 @@
 target_include_directories("${CMAKE_PROJECT_NAME}" PRIVATE ${CMAKE_SOURCE_DIR}/include)
 add_library(OBJECT_LIB OBJECT)
 
-target_sources(OBJECT_LIB PRIVATE Lexer.cpp)
-target_link_libraries(OBJECT_LIB -fsanitize=address)
+target_sources(OBJECT_LIB PRIVATE
+  Lexer.cpp
+  LexerStream.cpp)
+
+if( CMAKE_BUILD_TYPE STREQUAL "Debug")
+  target_link_libraries(OBJECT_LIB -fsanitize=address)
+endif()
 
 target_include_directories(OBJECT_LIB PRIVATE ${CMAKE_SOURCE_DIR}/include)
 

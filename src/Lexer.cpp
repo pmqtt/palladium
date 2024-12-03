@@ -16,3 +16,14 @@ auto to_string(TokenKind tk) -> std::string {
 }
 
 } // namespace detail
+
+auto operator<<(std::ostream &os, const Token &token) -> std::ostream & {
+  os << "( kind = " << detail::to_string(token._kind);
+  os << ", value = \"" << token._value << "\" )";
+  return os;
+}
+
+auto operator<<(std::ostream &os, const TokenKind tk) -> std::ostream & {
+  os << detail::to_string(tk);
+  return os;
+}
