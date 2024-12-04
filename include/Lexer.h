@@ -1,8 +1,9 @@
 #ifndef PALLADIUM_LEXER_H_
 #define PALLADIUM_LEXER_H_
-#include <istream>
+#include "LexerStream.h"
+#include "Util.h"
+#include <memory>
 #include <string>
-
 enum class TokenKind {
   // Literals
   IDENTIFIER = 0,
@@ -17,7 +18,7 @@ enum class TokenKind {
   OP_DIV,
   OP_SET, // =
   OP_EQ,  // ==
-  OP_NEQ,
+  OP_NEQ, // !=
 
   // Special tokens
   END_OF_FILE,
@@ -46,6 +47,17 @@ public:
 private:
   TokenKind _kind;
   std::string _value;
+};
+
+class Lexer final {
+public:
+  Lexer(const std::shared_ptr<LexerStream> &stream);
+
+  auto next() -> ResultOr<Token>;
+
+private:
+  std::shared_ptr<LexerStream> _stream;
+  std::size_t _pos;
 };
 
 #endif

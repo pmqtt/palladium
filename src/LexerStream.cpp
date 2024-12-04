@@ -21,6 +21,7 @@ LexerStringStream::LexerStringStream(std::string stream)
 
 auto LexerStringStream::next() -> std::optional<char> {
   if (_pos >= _buffer.size()) {
+    _pos++;
     return std::nullopt;
   }
   char c = _buffer[_pos];

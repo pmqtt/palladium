@@ -14,7 +14,10 @@
 namespace purge {
 class runner {
 public:
-  runner(int argc, char **argv) {}
+  runner(int argc, char **argv) {
+    (void)argc;
+    (void)(argv);
+  }
 
   void run() {
     for (auto &[key, test_item] : purge::test_registry::test_storage) {
