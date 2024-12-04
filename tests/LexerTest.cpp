@@ -6,14 +6,24 @@ PURGE_MAIN
 #define LEX_REQUIERE_TOKEN(TK, X)                                              \
   do {                                                                         \
     KIND__ = TK;                                                               \
-    REQUIRE(lex.next().map(X).result());                                       \
+    auto res = lex.next().map(X);                                              \
+    if (res) {                                                                 \
+      REQUIRE(res.result());                                                   \
+    } else {                                                                   \
+      REQUIRE(false);                                                          \
+    }                                                                          \
   } while (false);
 
 #define LEX_REQUIERE_TOKEN_VALUE(TK, V, X)                                     \
   do {                                                                         \
     KIND__ = TK;                                                               \
     VALUE__ = V;                                                               \
-    REQUIRE(lex.next().map(X).result());                                       \
+    auto res = lex.next().map(X);                                              \
+    if (res) {                                                                 \
+      REQUIRE(res.result());                                                   \
+    } else {                                                                   \
+      REQUIRE(false);                                                          \
+    }                                                                          \
   } while (false);
 
 TokenKind KIND__;
@@ -118,4 +128,42 @@ SIMPLE_TEST_CASE(LexerDouble_2) {
   auto stream = std::make_shared<LexerStringStream>("0.101");
   Lexer lex(stream);
   LEX_REQUIERE_TOKEN_VALUE(TokenKind::DOUBLE, "0.101", test_tk_value);
+}
+
+SIMPLE_TEST_CASE(LexerDouble_1_failure) {
+  auto stream = std::make_shared<LexerStringStream>("1.101.2");
+  Lexer lex(stream);
+  REQUIRE(!lex.next().ok());
+}
+
+SIMPLE_TEST_CASE(LexerDouble_2_failure) {
+  auto stream = std::make_shared<LexerStringStream>("0.101.0");
+  Lexer lex(stream);
+  REQUIRE(!lex.next().ok());
+}
+
+SIMPLE_TEST_CASE(Lexer_complex_test_1) {
+  auto stream = std::make_shared<LexerStringStream>("0.101+2-\"Hallo Welt\"=X");
+  Lexer lex(stream);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::DOUBLE, "0.101", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::OP_ADD, "+", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::INTEGER, "2", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::OP_SUB, "-", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::TEXT, "Hallo Welt", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::OP_SET, "=", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "X", test_tk_value);
+  LEX_REQUIERE_TOKEN(TokenKind::END_OF_FILE, test_token);
+}
+SIMPLE_TEST_CASE(Lexer_complex_test_2) {
+  auto stream =
+      std::make_shared<LexerStringStream>("0.1 + 2 \t-\n \"Hallo Welt\"  = X");
+  Lexer lex(stream);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::DOUBLE, "0.1", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::OP_ADD, "+", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::INTEGER, "2", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::OP_SUB, "-", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::TEXT, "Hallo Welt", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::OP_SET, "=", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "X", test_tk_value);
+  LEX_REQUIERE_TOKEN(TokenKind::END_OF_FILE, test_token);
 }

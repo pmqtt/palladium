@@ -42,8 +42,8 @@ Lexer::Lexer(const std::shared_ptr<LexerStream> &stream)
     : _stream(stream), _pos(0) {}
 
 auto Lexer::next() -> ResultOr<Token> {
-  const std::optional<char> opt_c = _stream->next();
-  if (opt_c) {
+  std::optional<char> opt_c = _stream->next();
+  while (opt_c) {
     const char c = *opt_c;
     auto it = detail::SIMPLE_CHAR_TO_TOKEN.find(c);
     if (it != detail::SIMPLE_CHAR_TO_TOKEN.cend()) {
@@ -105,9 +105,10 @@ auto Lexer::next() -> ResultOr<Token> {
               value += *opt_nextC;
               opt_nextC = _stream->next();
             }
-            if (std::isprint(*opt_nextC) && !std::isspace(*opt_nextC)) {
-              return err("Invalid hex integer number");
+            if (opt_nextC && std::isalpha(*opt_nextC)) {
+              return err("Invalid hexadicimal integer number");
             }
+
             _stream->prev();
             return Token(TokenKind::INTEGER, value);
           }
@@ -119,9 +120,10 @@ auto Lexer::next() -> ResultOr<Token> {
               value += *opt_nextC;
               opt_nextC = _stream->next();
             }
-            if (std::isprint(*opt_nextC) && !std::isspace(*opt_nextC)) {
-              return err("Invalid bin integer number");
+            if (opt_nextC && std::isdigit(*opt_nextC)) {
+              return err("Invalid binary integer number");
             }
+
             _stream->prev();
             return Token(TokenKind::INTEGER, value);
           }
@@ -134,13 +136,13 @@ auto Lexer::next() -> ResultOr<Token> {
               value += *opt_nextC;
               opt_nextC = _stream->next();
             }
-            if (std::isprint(*opt_nextC) && !std::isspace(*opt_nextC)) {
+            if (opt_nextC && *opt_nextC == '.') {
               return err("Invalid floating point number");
             }
+            _stream->prev();
             return Token(TokenKind::DOUBLE, value);
           }
-
-          if (std::isprint(*opt_nextC) && !std::isspace(*opt_nextC)) {
+          if (opt_nextC && std::isdigit(*opt_nextC)) {
             return err("Invalid integer number");
           }
           _stream->prev();
@@ -161,15 +163,19 @@ auto Lexer::next() -> ResultOr<Token> {
           value += *opt_nextC;
           opt_nextC = _stream->next();
         }
-        if (std::isprint(*opt_nextC) && !std::isspace(*opt_nextC)) {
+        if (opt_nextC && *opt_nextC == '.') {
           return err("Invalid floating point number");
         }
+
+        _stream->prev();
         return Token(TokenKind::DOUBLE, value);
       }
-      if (value.size() > 1) {
-        _stream->prev();
-      }
+      _stream->prev();
       return Token(TokenKind::INTEGER, value);
+    }
+    if (std::isspace(c)) {
+      opt_c = _stream->next();
+      continue;
     }
   }
 
