@@ -49,6 +49,13 @@ public:
     }
   }
 
+  auto result_or(const T &rhs) -> T {
+    if (ok()) {
+      return std::get<0>(_result);
+    }
+    return rhs;
+  }
+
 private:
   std::variant<T, Error> _result;
 };

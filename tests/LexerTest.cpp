@@ -6,24 +6,14 @@ PURGE_MAIN
 #define LEX_REQUIERE_TOKEN(TK, X)                                              \
   do {                                                                         \
     KIND__ = TK;                                                               \
-    auto res = lex.next().map(X);                                              \
-    if (res) {                                                                 \
-      REQUIRE(res.result());                                                   \
-    } else {                                                                   \
-      REQUIRE(false);                                                          \
-    }                                                                          \
+    REQUIRE(lex.next().map(X).result_or(false));                               \
   } while (false);
 
 #define LEX_REQUIERE_TOKEN_VALUE(TK, V, X)                                     \
   do {                                                                         \
     KIND__ = TK;                                                               \
     VALUE__ = V;                                                               \
-    auto res = lex.next().map(X);                                              \
-    if (res) {                                                                 \
-      REQUIRE(res.result());                                                   \
-    } else {                                                                   \
-      REQUIRE(false);                                                          \
-    }                                                                          \
+    REQUIRE(lex.next().map(X).result_or(false));                               \
   } while (false);
 
 TokenKind KIND__;
@@ -33,7 +23,7 @@ auto test_tk_value = [](const Token &tk) -> bool {
   return tk.kind() == KIND__ && tk.value() == VALUE__;
 };
 SIMPLE_TEST_CASE(LexerOperatorTest) {
-  auto stream = std::make_shared<LexerStringStream>("+-*/===");
+  auto stream = std::make_shared<LexerStringStream>("+-*/===!!=");
   Lexer lex(stream);
   LEX_REQUIERE_TOKEN(TokenKind::OP_ADD, test_token);
   LEX_REQUIERE_TOKEN(TokenKind::OP_SUB, test_token);
@@ -41,6 +31,8 @@ SIMPLE_TEST_CASE(LexerOperatorTest) {
   LEX_REQUIERE_TOKEN(TokenKind::OP_DIV, test_token);
   LEX_REQUIERE_TOKEN(TokenKind::OP_EQ, test_token);
   LEX_REQUIERE_TOKEN(TokenKind::OP_SET, test_token);
+  LEX_REQUIERE_TOKEN(TokenKind::OP_NOT, test_token);
+  LEX_REQUIERE_TOKEN(TokenKind::OP_NEQ, test_token);
   LEX_REQUIERE_TOKEN(TokenKind::END_OF_FILE, test_token);
 }
 
@@ -154,6 +146,7 @@ SIMPLE_TEST_CASE(Lexer_complex_test_1) {
   LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "X", test_tk_value);
   LEX_REQUIERE_TOKEN(TokenKind::END_OF_FILE, test_token);
 }
+
 SIMPLE_TEST_CASE(Lexer_complex_test_2) {
   auto stream =
       std::make_shared<LexerStringStream>("0.1 + 2 \t-\n \"Hallo Welt\"  = X");
@@ -165,5 +158,36 @@ SIMPLE_TEST_CASE(Lexer_complex_test_2) {
   LEX_REQUIERE_TOKEN_VALUE(TokenKind::TEXT, "Hallo Welt", test_tk_value);
   LEX_REQUIERE_TOKEN_VALUE(TokenKind::OP_SET, "=", test_tk_value);
   LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "X", test_tk_value);
+  LEX_REQUIERE_TOKEN(TokenKind::END_OF_FILE, test_token);
+}
+
+SIMPLE_TEST_CASE(Lexer_complex_test_3) {
+  auto stream = std::make_shared<LexerStringStream>(
+      "fn main(i32 a, i32 b) -> void { while( a < b ) { return 0;} }");
+  Lexer lex(stream);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::FN, "fn", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "main", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CLAMP_OPEN, "(", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::I32, "i32", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "a", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::COMMA, ",", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::I32, "i32", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "b", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CLAMP_CLOSE, ")", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::ARROW, "->", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::VOID, "void", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CURLY_OPEN, "{", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::WHILE, "while", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CLAMP_OPEN, "(", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "a", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::OP_LS, "<", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "b", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CLAMP_CLOSE, ")", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CURLY_OPEN, "{", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::RETURN, "return", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::INTEGER, "0", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::SEMICOLON, ";", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CURLY_CLOSE, "}", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CURLY_CLOSE, "}", test_tk_value);
   LEX_REQUIERE_TOKEN(TokenKind::END_OF_FILE, test_token);
 }

@@ -1,29 +1,166 @@
 #include "Lexer.h"
+#include "LexerStream.h"
 #include "Util.h"
 #include <cctype>
 #include <iostream>
 #include <optional>
 #include <string>
 #include <unordered_map>
+using LexStreamPtr = std::shared_ptr<LexerStream>;
+using OptChar = std::optional<char>;
+using OptResult = std::optional<ResultOr<Token>>;
+
+#define RETURN_IF_VALID(F)                                                     \
+  do {                                                                         \
+    auto res = F;                                                              \
+    if (res) {                                                                 \
+      return *res;                                                             \
+    };                                                                         \
+  } while (0);
+
+#define ERROR_IF_CHAR(X, F, TEXT)                                              \
+  do {                                                                         \
+    if (X && F(*X)) {                                                          \
+      return err(TEXT);                                                        \
+    }                                                                          \
+  } while (0);
+
+#define ERROR_IF_CHAR_EQ(X, EXP, TEXT)                                         \
+  do {                                                                         \
+    if (X && *X == EXP) {                                                      \
+      return err(TEXT);                                                        \
+    }                                                                          \
+  } while (0);
+
 namespace detail {
 
-auto to_string(TokenKind tk) -> std::string {
-  static const char *converter[] = {
-      "IDENTIFIER", "TEXT",   "INTEGER", "DOUBLE", "OP_ADD", "OP_SUB",
-      "OP_MULT",    "OP_DIV", "OP_SET",  "OP_EQ",  "OP_NEQ", "END_OF_FILE"};
+auto is_digit = [](char x) { return std::isdigit(x); };
+auto is_xdigit = [](char x) { return std::isxdigit(x); };
 
+auto to_string(TokenKind tk) -> std::string {
+  static const char *converter[] = {"IDENTIFIER",
+                                    "TEXT",
+                                    "INTEGER",
+                                    "DOUBLE",
+                                    "OP_ADD",
+                                    "OP_SUB",
+                                    "OP_MULT",
+                                    "OP_DIV",
+                                    "OP_SET",
+                                    "OP_EQ",
+                                    "OP_NEQ",
+                                    "OP_NOT",
+                                    "OP_LS",
+                                    "OP_LS_EQ",
+                                    "OP_GT",
+                                    "OP_GT_EQ",
+                                    "EDGE_CLAMP_OPEN",
+                                    "EDGE_CLAMP_CLOSE",
+                                    "CLAMP_OPEN",
+                                    "CLAMP_CLOSE",
+                                    "CURLY_OPEN",
+                                    "CURLY_CLOSE",
+                                    "SEMICOLON",
+                                    "ARROW",
+                                    "COMMA",
+                                    "FN",
+                                    "LET",
+                                    "CONST",
+                                    "I32",
+                                    "VOID",
+                                    "RETURN",
+                                    "WHILE",
+                                    "END_OF_FILE"};
+
+  std::cout << "INT TK: " << static_cast<std::size_t>(tk) << " : "
+            << std::size(converter) << std::endl;
   if (static_cast<std::size_t>(tk) < std::size(converter)) {
+    std::cout << "A" << std::endl;
     return converter[static_cast<std::size_t>(tk)];
   }
+  std::cout << "B" << std::endl;
   return "Token type not in map";
 }
+
+static const std::unordered_map<std::string, Token> KEYWORDS = {
+    {"fn", Token(TokenKind::FN, "fn")},
+    {"let", Token(TokenKind::LET, "let")},
+    {"const", Token(TokenKind::CONST, "const")},
+    {"i32", Token(TokenKind::I32, "i32")},
+    {"void", Token(TokenKind::VOID, "void")},
+    {"return", Token(TokenKind::RETURN, "return")},
+    {"while", Token(TokenKind::WHILE, "while")},
+};
 
 static const std::unordered_map<char, Token> SIMPLE_CHAR_TO_TOKEN = {
     {'+', Token(TokenKind::OP_ADD, "+")},
     {'-', Token(TokenKind::OP_SUB, "-")},
     {'*', Token(TokenKind::OP_MULT, "*")},
     {'/', Token(TokenKind::OP_DIV, "/")},
+    {'=', Token(TokenKind::OP_SET, "=")},
+    {'!', Token(TokenKind::OP_NOT, "!")},
+    {'<', Token(TokenKind::OP_LS, "<")},
+    {'>', Token(TokenKind::OP_GT, ">")},
+    {'[', Token(TokenKind::EDGE_CLAMP_OPEN, "[")},
+    {']', Token(TokenKind::EDGE_CLAMP_CLOSE, "]")},
+    {'(', Token(TokenKind::CLAMP_OPEN, "(")},
+    {')', Token(TokenKind::CLAMP_CLOSE, ")")},
+    {'{', Token(TokenKind::CURLY_OPEN, "{")},
+    {'}', Token(TokenKind::CURLY_CLOSE, "}")},
+    {';', Token(TokenKind::SEMICOLON, ";")},
+    {',', Token(TokenKind::COMMA, ",")},
 };
+
+static const std::unordered_map<char, std::unordered_map<char, Token>>
+    OPERATOR_MULTI_TRANSITION = {
+        {'=', {{'=', Token(TokenKind::OP_EQ, "==")}}},
+        {'!', {{'=', Token(TokenKind::OP_NEQ, "!=")}}},
+        {'<', {{'=', Token(TokenKind::OP_LS_EQ, "<=")}}},
+        {'>', {{'=', Token(TokenKind::OP_GT_EQ, ">=")}}},
+        {'-', {{'>', Token(TokenKind::ARROW, "->")}}},
+};
+
+template <typename... ARG>
+auto is_one_of(const std::optional<char> &opt, char c, ARG... args) -> bool {
+  if (!opt) {
+    return false;
+  }
+  const std::vector<char> test_cases = {c, args...};
+  for (char iter : test_cases) {
+    if (*opt == iter) {
+      return true;
+    }
+  }
+  return false;
+}
+template <class F>
+auto read_while(LexStreamPtr &stream, std::string &value, const F &func)
+    -> OptChar {
+  auto opt_c = stream->next();
+  while (opt_c && func(*opt_c)) {
+    value += *opt_c;
+    opt_c = stream->next();
+  }
+  return opt_c;
+}
+
+auto read_while_digit(LexStreamPtr &stream, std::string &value) -> OptChar {
+  return read_while(stream, value, detail::is_digit);
+}
+
+auto read_while_xdigit(LexStreamPtr &stream, std::string &value) -> OptChar {
+  return read_while(stream, value, detail::is_xdigit);
+}
+template <typename... ARG>
+auto read_while_is_one_of(LexStreamPtr &stream, std::string &value, char c,
+                          ARG... args) -> OptChar {
+  auto opt_c = stream->next();
+  while (opt_c && detail::is_one_of(opt_c, c, args...)) {
+    value += *opt_c;
+    opt_c = stream->next();
+  }
+  return opt_c;
+}
 
 } // namespace detail
 
@@ -38,146 +175,145 @@ auto operator<<(std::ostream &os, const TokenKind tk) -> std::ostream & {
   return os;
 }
 
-Lexer::Lexer(const std::shared_ptr<LexerStream> &stream)
-    : _stream(stream), _pos(0) {}
+auto lex_operator(LexStreamPtr &stream, char c) -> OptResult {
+  auto it = detail::SIMPLE_CHAR_TO_TOKEN.find(c);
+  if (it != detail::SIMPLE_CHAR_TO_TOKEN.cend()) {
+    auto iter = detail::OPERATOR_MULTI_TRANSITION.find(c);
+    if (iter != detail::OPERATOR_MULTI_TRANSITION.cend()) {
+      const std::optional<char> opt_c = stream->next();
+      if (opt_c) {
+        auto iter2 = iter->second.find(*opt_c);
+        if (iter2 != iter->second.cend()) {
+          return iter2->second;
+        }
+      }
+      stream->prev();
+    }
+    return it->second;
+  }
+  return {};
+}
 
-auto Lexer::next() -> ResultOr<Token> {
-  std::optional<char> opt_c = _stream->next();
-  while (opt_c) {
-    const char c = *opt_c;
-    auto it = detail::SIMPLE_CHAR_TO_TOKEN.find(c);
-    if (it != detail::SIMPLE_CHAR_TO_TOKEN.cend()) {
+auto lex_identifier_and_keyword(LexStreamPtr &stream, char c) -> OptResult {
+  if (c == '_' || std::isalpha(c)) {
+    std::string value;
+    value += c;
+    detail::read_while(stream, value,
+                       [](char x) { return x == '_' || std::isalnum(x); });
+    stream->prev();
+    auto it = detail::KEYWORDS.find(value);
+    if (it != detail::KEYWORDS.cend()) {
       return it->second;
     }
-    if (c == '=') {
-      const std::optional<char> opt_nextC = _stream->next();
-      if (opt_nextC && *opt_nextC == '=') {
-        return Token(TokenKind::OP_EQ, "==");
+
+    return Token(TokenKind::IDENTIFIER, value);
+  }
+  return {};
+}
+
+auto lex_text(LexStreamPtr &stream, char c) -> OptResult {
+  if (c == '"') {
+    std::string value;
+    OptChar opt_c = stream->next();
+    while (opt_c && *opt_c != '"') {
+      if (*opt_c == '\\') {
+        opt_c = stream->next();
+        if (opt_c) {
+          value += *opt_c;
+          opt_c = stream->next();
+          continue;
+        }
+        return err("Invalid escape sequence in string literal");
       }
-      _stream->prev();
-      return Token(TokenKind::OP_SET, "=");
+      value += *opt_c;
+      opt_c = stream->next();
     }
-    if (c == '_' || std::isalpha(c)) {
-      std::string value;
+    if (!opt_c) {
+      return err("Unterminated string literal");
+    }
+    return Token(TokenKind::TEXT, value);
+  }
+  return {};
+}
+auto lex_hex_number(LexStreamPtr &stream, OptChar &opt_c, std::string &value)
+    -> OptResult {
+  if (detail::is_one_of(opt_c, 'x', 'x')) {
+    value += *opt_c;
+    opt_c = detail::read_while_xdigit(stream, value);
+    ERROR_IF_CHAR(opt_c, std::isalpha, "Invalid hex number");
+    stream->prev();
+    return Token(TokenKind::INTEGER, value);
+  }
+  return {};
+}
+
+auto lex_bin_number(LexStreamPtr &stream, OptChar &opt_c, std::string &value)
+    -> OptResult {
+  if (detail::is_one_of(opt_c, 'b', 'B')) {
+    value += *opt_c;
+    opt_c = detail::read_while_is_one_of(stream, value, '0', '1');
+    ERROR_IF_CHAR(opt_c, std::isdigit, "Invalid bin number");
+    stream->prev();
+    return Token(TokenKind::INTEGER, value);
+  }
+  return {};
+}
+
+auto lex_float_number(LexStreamPtr &stream, OptChar &opt_c, std::string &value)
+    -> OptResult {
+  if (*opt_c == '.') {
+    value += *opt_c;
+    opt_c = detail::read_while_digit(stream, value);
+    ERROR_IF_CHAR_EQ(opt_c, '.', "Invalid floating point number");
+    stream->prev();
+    return Token(TokenKind::DOUBLE, value);
+  }
+
+  return {};
+}
+
+auto lex_number(LexStreamPtr &stream, char c) -> OptResult {
+  if (std::isdigit(c)) {
+    std::string value;
+    if (c == '0') {
       value += c;
-      std::optional<char> opt_nextC = _stream->next();
-      while (opt_nextC && (*opt_nextC == '_' || std::isalnum(*opt_nextC))) {
-        value += *opt_nextC;
-        opt_nextC = _stream->next();
+      OptChar opt_c = stream->next();
+      if (opt_c) {
+        RETURN_IF_VALID(lex_hex_number(stream, opt_c, value));
+        RETURN_IF_VALID(lex_bin_number(stream, opt_c, value));
+        RETURN_IF_VALID(lex_float_number(stream, opt_c, value));
+        ERROR_IF_CHAR(opt_c, std::isdigit, "Invalid integer number");
+        stream->prev();
       }
-      if (value.size() > 1) {
-        _stream->prev();
-      }
-      return Token(TokenKind::IDENTIFIER, value);
-    }
-    if (c == '"') {
-      std::string value;
-      std::optional<char> opt_nextC = _stream->next();
-      while (opt_nextC && *opt_nextC != '"') {
-        if (*opt_nextC == '\\') {
-          opt_nextC = _stream->next();
-          if (opt_nextC) {
-            value += *opt_nextC;
-            opt_nextC = _stream->next();
-            continue;
-          }
-          return err("Invalid escape sequence in string literal");
-        }
-        value += *opt_nextC;
-        opt_nextC = _stream->next();
-      }
-      if (!opt_nextC) {
-        return err("Unterminated string literal");
-      }
-      return Token(TokenKind::TEXT, value);
-    }
-    if (std::isdigit(c)) {
-      std::string value;
-      if (c == '0') {
-        value += c;
-        std::optional<char> opt_nextC = _stream->next();
-        if (opt_nextC) {
-          if (*opt_nextC == 'x' || *opt_nextC == 'X') {
-            // hex
-            value += *opt_nextC;
-            opt_nextC = _stream->next();
-            while (opt_nextC && std::isxdigit(*opt_nextC)) {
-              value += *opt_nextC;
-              opt_nextC = _stream->next();
-            }
-            if (opt_nextC && std::isalpha(*opt_nextC)) {
-              return err("Invalid hexadicimal integer number");
-            }
-
-            _stream->prev();
-            return Token(TokenKind::INTEGER, value);
-          }
-          if (*opt_nextC == 'b' || *opt_nextC == 'B') {
-            // bin
-            value += *opt_nextC;
-            opt_nextC = _stream->next();
-            while (opt_nextC && (*opt_nextC == '0' || *opt_nextC == '1')) {
-              value += *opt_nextC;
-              opt_nextC = _stream->next();
-            }
-            if (opt_nextC && std::isdigit(*opt_nextC)) {
-              return err("Invalid binary integer number");
-            }
-
-            _stream->prev();
-            return Token(TokenKind::INTEGER, value);
-          }
-          // floating point case
-          if (opt_nextC && *opt_nextC == '.') {
-            // floating number
-            value += *opt_nextC;
-            opt_nextC = _stream->next();
-            while (opt_nextC && std::isdigit(*opt_nextC)) {
-              value += *opt_nextC;
-              opt_nextC = _stream->next();
-            }
-            if (opt_nextC && *opt_nextC == '.') {
-              return err("Invalid floating point number");
-            }
-            _stream->prev();
-            return Token(TokenKind::DOUBLE, value);
-          }
-          if (opt_nextC && std::isdigit(*opt_nextC)) {
-            return err("Invalid integer number");
-          }
-          _stream->prev();
-        }
-        return Token(TokenKind::INTEGER, value);
-      }
-      value += c;
-      std::optional<char> opt_nextC = _stream->next();
-      while (opt_nextC && std::isdigit(*opt_nextC)) {
-        value += *opt_nextC;
-        opt_nextC = _stream->next();
-      }
-      if (opt_nextC && *opt_nextC == '.') {
-        // floating number
-        value += *opt_nextC;
-        opt_nextC = _stream->next();
-        while (opt_nextC && std::isdigit(*opt_nextC)) {
-          value += *opt_nextC;
-          opt_nextC = _stream->next();
-        }
-        if (opt_nextC && *opt_nextC == '.') {
-          return err("Invalid floating point number");
-        }
-
-        _stream->prev();
-        return Token(TokenKind::DOUBLE, value);
-      }
-      _stream->prev();
       return Token(TokenKind::INTEGER, value);
     }
+    value += c;
+    auto opt_c = detail::read_while_digit(stream, value);
+
+    RETURN_IF_VALID(lex_float_number(stream, opt_c, value));
+    stream->prev();
+    return Token(TokenKind::INTEGER, value);
+  }
+  return {};
+}
+
+auto Lexer::next() -> ResultOr<Token> {
+  OptChar opt_c = _stream->next();
+  while (opt_c) {
+    const char c = *opt_c;
     if (std::isspace(c)) {
       opt_c = _stream->next();
       continue;
     }
-  }
+    RETURN_IF_VALID(lex_operator(_stream, c));
+    RETURN_IF_VALID(lex_identifier_and_keyword(_stream, c));
+    RETURN_IF_VALID(lex_text(_stream, c));
+    RETURN_IF_VALID(lex_number(_stream, c));
 
+    return err(std::string("Invalid character read: ") + c);
+  }
   return Token(TokenKind::END_OF_FILE, "EOF");
 }
+
+Lexer::Lexer(const std::shared_ptr<LexerStream> &stream)
+    : _stream(stream), _pos(0) {}

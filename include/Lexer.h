@@ -12,15 +12,42 @@ enum class TokenKind {
   DOUBLE,
 
   // Operators
-  OP_ADD,
-  OP_SUB,
-  OP_MULT,
-  OP_DIV,
-  OP_SET, // =
-  OP_EQ,  // ==
-  OP_NEQ, // !=
+  OP_ADD,   // +
+  OP_SUB,   // -
+  OP_MULT,  // *
+  OP_DIV,   // /
+  OP_SET,   // =
+  OP_EQ,    // ==
+  OP_NEQ,   // !=
+  OP_NOT,   // !
+  OP_LS,    // <
+  OP_LS_EQ, // <=
+  OP_GT,    // >
+  OP_GT_EQ, // >=
 
-  // Special tokens
+  // Groups
+  EDGE_CLAMP_OPEN,  // [
+  EDGE_CLAMP_CLOSE, // [
+  CLAMP_OPEN,       // (
+  CLAMP_CLOSE,      // )
+  CURLY_OPEN,       // {
+  CURLY_CLOSE,      // }
+
+  // Command symbols
+  SEMICOLON, // ;
+  ARROW,     // ->
+  COMMA,     // ,
+
+  // KEYWORDS
+  FN,     // fn
+  LET,    // let
+  CONST,  // const
+  I32,    // i32
+  VOID,   // void
+  RETURN, // return
+  WHILE,  // while
+
+  // secial tokens
   END_OF_FILE,
   MAX_TOKEN_KIND,
 };
