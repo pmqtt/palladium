@@ -64,8 +64,9 @@ auto to_string(TokenKind tk) -> std::string;
 
 class Token final {
 public:
-  Token(const TokenKind &tk, std::string value)
-      : _kind(tk), _value(std::move(value)), _line(1), _pos(0) {}
+  Token(const TokenKind &tk, std::string value, std::size_t line = 1,
+        std::size_t pos = 0)
+      : _kind(tk), _value(std::move(value)), _line(line), _pos(pos) {}
 
   auto operator==(const TokenKind &rhs) -> bool { return _kind == rhs; }
 
