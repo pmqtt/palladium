@@ -1,15 +1,10 @@
 #include "Lexer.h"
-#include "LexerStream.h"
 #include "Util.h"
 #include <cctype>
 #include <iostream>
 #include <optional>
 #include <string>
 #include <unordered_map>
-using LexStreamPtr = std::shared_ptr<LexerStream>;
-using OptChar = std::optional<char>;
-using OptResult = std::optional<ResultOr<Token>>;
-
 #define RETURN_IF_VALID(F)                                                     \
   do {                                                                         \
     auto res = F;                                                              \
@@ -175,32 +170,32 @@ auto operator<<(std::ostream &os, const TokenKind tk) -> std::ostream & {
   return os;
 }
 
-auto lex_operator(LexStreamPtr &stream, char c) -> OptResult {
+auto Lexer::lex_operator(char c) -> OptResult {
   auto it = detail::SIMPLE_CHAR_TO_TOKEN.find(c);
   if (it != detail::SIMPLE_CHAR_TO_TOKEN.cend()) {
     auto iter = detail::OPERATOR_MULTI_TRANSITION.find(c);
     if (iter != detail::OPERATOR_MULTI_TRANSITION.cend()) {
-      const std::optional<char> opt_c = stream->next();
+      const std::optional<char> opt_c = _stream->next();
       if (opt_c) {
         auto iter2 = iter->second.find(*opt_c);
         if (iter2 != iter->second.cend()) {
           return iter2->second;
         }
       }
-      stream->prev();
+      _stream->prev();
     }
     return it->second;
   }
   return {};
 }
 
-auto lex_identifier_and_keyword(LexStreamPtr &stream, char c) -> OptResult {
+auto Lexer::lex_identifier_and_keyword(char c) -> OptResult {
   if (c == '_' || std::isalpha(c)) {
     std::string value;
     value += c;
-    detail::read_while(stream, value,
+    detail::read_while(_stream, value,
                        [](char x) { return x == '_' || std::isalnum(x); });
-    stream->prev();
+    _stream->prev();
     auto it = detail::KEYWORDS.find(value);
     if (it != detail::KEYWORDS.cend()) {
       return it->second;
@@ -211,22 +206,22 @@ auto lex_identifier_and_keyword(LexStreamPtr &stream, char c) -> OptResult {
   return {};
 }
 
-auto lex_text(LexStreamPtr &stream, char c) -> OptResult {
+auto Lexer::lex_text(char c) -> OptResult {
   if (c == '"') {
     std::string value;
-    OptChar opt_c = stream->next();
+    OptChar opt_c = _stream->next();
     while (opt_c && *opt_c != '"') {
       if (*opt_c == '\\') {
-        opt_c = stream->next();
+        opt_c = _stream->next();
         if (opt_c) {
           value += *opt_c;
-          opt_c = stream->next();
+          opt_c = _stream->next();
           continue;
         }
         return err("Invalid escape sequence in string literal");
       }
       value += *opt_c;
-      opt_c = stream->next();
+      opt_c = _stream->next();
     }
     if (!opt_c) {
       return err("Unterminated string literal");
@@ -235,80 +230,88 @@ auto lex_text(LexStreamPtr &stream, char c) -> OptResult {
   }
   return {};
 }
-auto lex_hex_number(LexStreamPtr &stream, OptChar &opt_c, std::string &value)
-    -> OptResult {
+auto Lexer::lex_hex_number(OptChar &opt_c, std::string &value) -> OptResult {
   if (detail::is_one_of(opt_c, 'x', 'x')) {
     value += *opt_c;
-    opt_c = detail::read_while_xdigit(stream, value);
+    opt_c = detail::read_while_xdigit(_stream, value);
     ERROR_IF_CHAR(opt_c, std::isalpha, "Invalid hex number");
-    stream->prev();
+    _stream->prev();
     return Token(TokenKind::INTEGER, value);
   }
   return {};
 }
 
-auto lex_bin_number(LexStreamPtr &stream, OptChar &opt_c, std::string &value)
-    -> OptResult {
+auto Lexer::lex_bin_number(OptChar &opt_c, std::string &value) -> OptResult {
   if (detail::is_one_of(opt_c, 'b', 'B')) {
     value += *opt_c;
-    opt_c = detail::read_while_is_one_of(stream, value, '0', '1');
+    opt_c = detail::read_while_is_one_of(_stream, value, '0', '1');
     ERROR_IF_CHAR(opt_c, std::isdigit, "Invalid bin number");
-    stream->prev();
+    _stream->prev();
     return Token(TokenKind::INTEGER, value);
   }
   return {};
 }
 
-auto lex_float_number(LexStreamPtr &stream, OptChar &opt_c, std::string &value)
-    -> OptResult {
+auto Lexer::lex_float_number(OptChar &opt_c, std::string &value) -> OptResult {
   if (*opt_c == '.') {
     value += *opt_c;
-    opt_c = detail::read_while_digit(stream, value);
+    opt_c = detail::read_while_digit(_stream, value);
     ERROR_IF_CHAR_EQ(opt_c, '.', "Invalid floating point number");
-    stream->prev();
+    _stream->prev();
     return Token(TokenKind::DOUBLE, value);
   }
 
   return {};
 }
 
-auto lex_number(LexStreamPtr &stream, char c) -> OptResult {
+auto Lexer::lex_number(char c) -> OptResult {
   if (std::isdigit(c)) {
     std::string value;
     if (c == '0') {
       value += c;
-      OptChar opt_c = stream->next();
+      OptChar opt_c = _stream->next();
       if (opt_c) {
-        RETURN_IF_VALID(lex_hex_number(stream, opt_c, value));
-        RETURN_IF_VALID(lex_bin_number(stream, opt_c, value));
-        RETURN_IF_VALID(lex_float_number(stream, opt_c, value));
+        RETURN_IF_VALID(lex_hex_number(opt_c, value));
+        RETURN_IF_VALID(lex_bin_number(opt_c, value));
+        RETURN_IF_VALID(lex_float_number(opt_c, value));
         ERROR_IF_CHAR(opt_c, std::isdigit, "Invalid integer number");
-        stream->prev();
+        _stream->prev();
       }
       return Token(TokenKind::INTEGER, value);
     }
     value += c;
-    auto opt_c = detail::read_while_digit(stream, value);
+    auto opt_c = detail::read_while_digit(_stream, value);
 
-    RETURN_IF_VALID(lex_float_number(stream, opt_c, value));
-    stream->prev();
+    RETURN_IF_VALID(lex_float_number(opt_c, value));
+    _stream->prev();
     return Token(TokenKind::INTEGER, value);
   }
   return {};
 }
 
 auto Lexer::next() -> ResultOr<Token> {
+  if (!_lookahead) {
+    if (_buffer.size() > 0) {
+      auto res = _buffer.front();
+      _buffer.erase(_buffer.begin());
+      return res;
+    }
+  }
   OptChar opt_c = _stream->next();
   while (opt_c) {
     const char c = *opt_c;
     if (std::isspace(c)) {
+      if (c == '\n') {
+        _line++;
+        _pos = 0;
+      }
       opt_c = _stream->next();
       continue;
     }
-    RETURN_IF_VALID(lex_operator(_stream, c));
-    RETURN_IF_VALID(lex_identifier_and_keyword(_stream, c));
-    RETURN_IF_VALID(lex_text(_stream, c));
-    RETURN_IF_VALID(lex_number(_stream, c));
+    RETURN_IF_VALID(lex_operator(c));
+    RETURN_IF_VALID(lex_identifier_and_keyword(c));
+    RETURN_IF_VALID(lex_text(c));
+    RETURN_IF_VALID(lex_number(c));
 
     return err(std::string("Invalid character read: ") + c);
   }
@@ -316,4 +319,4 @@ auto Lexer::next() -> ResultOr<Token> {
 }
 
 Lexer::Lexer(const std::shared_ptr<LexerStream> &stream)
-    : _stream(stream), _pos(0) {}
+    : _stream(stream), _buffer(), _lookahead(false), _line(1), _pos(0) {}

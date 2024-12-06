@@ -36,6 +36,22 @@ SIMPLE_TEST_CASE(LexerOperatorTest) {
   LEX_REQUIERE_TOKEN(TokenKind::END_OF_FILE, test_token);
 }
 
+SIMPLE_TEST_CASE(LexerEmptyTest) {
+  auto stream = std::make_shared<LexerStringStream>("");
+  Lexer lexer(stream);
+  auto token = lexer.next();
+  REQUIRE(token.ok());
+  REQUIRE(token.result().kind() == TokenKind::END_OF_FILE);
+}
+
+SIMPLE_TEST_CASE(LexerOnlyWhitespace) {
+  auto stream = std::make_shared<LexerStringStream>("   \t\n  ");
+  Lexer lexer(stream);
+  auto token = lexer.next();
+  REQUIRE(token.ok());
+  REQUIRE(token.result().kind() == TokenKind::END_OF_FILE);
+}
+
 SIMPLE_TEST_CASE(LexerIdentifierTest) {
   auto stream = std::make_shared<LexerStringStream>("_name12_233_abc");
   Lexer lex(stream);
@@ -66,6 +82,13 @@ SIMPLE_TEST_CASE(LexerUnterminatedString_2) {
   auto stream = std::make_shared<LexerStringStream>("\"Hallo\\");
   Lexer lex(stream);
   REQUIRE(!lex.next().ok());
+}
+
+SIMPLE_TEST_CASE(LexerUnterminatedString_3) {
+  auto stream = std::make_shared<LexerStringStream>("\"unterminated");
+  Lexer lexer(stream);
+  auto token = lexer.next();
+  REQUIRE(!token.ok());
 }
 
 SIMPLE_TEST_CASE(LexerInteger_1) {
@@ -190,4 +213,68 @@ SIMPLE_TEST_CASE(Lexer_complex_test_3) {
   LEX_REQUIERE_TOKEN_VALUE(TokenKind::CURLY_CLOSE, "}", test_tk_value);
   LEX_REQUIERE_TOKEN_VALUE(TokenKind::CURLY_CLOSE, "}", test_tk_value);
   LEX_REQUIERE_TOKEN(TokenKind::END_OF_FILE, test_token);
+}
+
+SIMPLE_TEST_CASE(Lexer_Looahead_test_1) {
+  auto stream = std::make_shared<LexerStringStream>(
+      "fn main(i32 a, i32 b) -> void { while( a < b ) { return 0;} }");
+  Lexer lex(stream);
+  REQUIRE(lex.lookahead(Token(TokenKind::FN, "fn"),
+                        Token(TokenKind::IDENTIFIER, "*")));
+
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::FN, "fn", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "main", test_tk_value);
+}
+
+SIMPLE_TEST_CASE(Lexer_Looahead_test_2) {
+  auto stream = std::make_shared<LexerStringStream>(
+      "fn main(i32 a, i32 b) -> void { while( a < b ) { return 0;} }");
+  Lexer lex(stream);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::FN, "fn", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "main", test_tk_value);
+
+  REQUIRE(lex.lookahead(Token(TokenKind::CLAMP_OPEN, "("),
+                        Token(TokenKind::I32, "i32")));
+
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CLAMP_OPEN, "(", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::I32, "i32", test_tk_value);
+}
+
+SIMPLE_TEST_CASE(Lexer_Looahead_test_3) {
+  auto stream = std::make_shared<LexerStringStream>(
+      "fn main(i32 a, i32 b) -> void { while( a < b ) { return 0;} }");
+  Lexer lex(stream);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::FN, "fn", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "main", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CLAMP_OPEN, "(", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::I32, "i32", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "a", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::COMMA, ",", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::I32, "i32", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "b", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CLAMP_CLOSE, ")", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::ARROW, "->", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::VOID, "void", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CURLY_OPEN, "{", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::WHILE, "while", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CLAMP_OPEN, "(", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "a", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::OP_LS, "<", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::IDENTIFIER, "b", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CLAMP_CLOSE, ")", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CURLY_OPEN, "{", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::RETURN, "return", test_tk_value);
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::INTEGER, "0", test_tk_value);
+  REQUIRE(!lex.lookahead(Token(TokenKind::CLAMP_CLOSE, ")")));
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::SEMICOLON, ";", test_tk_value);
+
+  REQUIRE(lex.lookahead(Token(TokenKind::CURLY_CLOSE, "}"),
+                        Token(TokenKind::CURLY_CLOSE, "}"),
+                        Token(TokenKind::END_OF_FILE, "EOF")));
+
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CURLY_CLOSE, "}", test_tk_value);
+  REQUIRE(lex.lookahead(Token(TokenKind::CURLY_CLOSE, "}")));
+  LEX_REQUIERE_TOKEN_VALUE(TokenKind::CURLY_CLOSE, "}", test_tk_value);
+  LEX_REQUIERE_TOKEN(TokenKind::END_OF_FILE, test_token);
+  REQUIRE(!lex.lookahead(Token(TokenKind::CURLY_CLOSE, "}")));
 }

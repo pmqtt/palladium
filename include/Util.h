@@ -1,9 +1,17 @@
 #ifndef PALLADIUM_UTIL_H_
 #define PALLADIUM_UTIL_H_
-#include <functional>
+#include <expected>
+#include <iostream>
+#include <stacktrace>
 #include <string>
 #include <variant>
 #define UNUSED(x) (void)(x)
+
+inline void panic(bool expr, int status = 1) {
+  if (!expr) {
+    ::exit(status);
+  }
+}
 
 struct Error {
   std::string message;
@@ -19,18 +27,26 @@ public:
 
   auto ok() const -> bool { return std::holds_alternative<T>(_result); }
   operator bool() const { return ok(); }
-  auto result() const -> T { return std::get<0>(_result); }
 
-  auto some(const std::function<void(const T &)> &func) -> ResultOr<T> & {
+  auto result() const -> T {
+    panic(ok());
+    return std::get<0>(_result);
+  }
+  auto error_value() const -> const Error & {
+    panic(!ok());
+    return std::get<1>(_result);
+  }
+
+  template <class Func> auto some(Func &&func) -> ResultOr<T> & {
     if (ok()) {
-      func(std::get<T>(_result));
+      std::forward<Func>(func)(std::get<0>(_result));
     }
     return *this;
   }
 
-  auto error(const std::function<void(const Error &)>) -> ResultOr<T> {
+  template <class Func> auto error(Func &&func) -> ResultOr<T> {
     if (!ok()) {
-      func(std::get<Error>(_result));
+      std::forward<Func>(func)(std::get<1>(_result));
     }
     return *this;
   }
@@ -38,15 +54,9 @@ public:
   template <class Func>
   auto map(Func &&func) -> ResultOr<decltype(func(std::declval<T>()))> {
     if (ok()) {
-      return func(std::get<T>(_result));
+      return std::forward<Func>(func)(std::get<0>(_result));
     }
-    return std::get<Error>(_result);
-  }
-
-  auto error_value() const -> const Error & {
-    if (!ok()) {
-      return std::get<Error>(_result);
-    }
+    return std::get<1>(_result);
   }
 
   auto result_or(const T &rhs) -> T {
@@ -63,5 +73,20 @@ private:
 static auto err(const std::string &msg) -> Error {
   return Error{.message = msg};
 }
+
+template <class T> class Switch {
+public:
+  Switch(T &value, const T &set_value, const T &reset_value)
+      : _value(value), _reset_value(reset_value) {
+    _value = set_value;
+  }
+  ~Switch() { _value = _reset_value; }
+  Switch(const Switch &) = delete;
+  Switch &operator=(const Switch &) = delete;
+
+private:
+  T &_value;
+  T _reset_value;
+};
 
 #endif

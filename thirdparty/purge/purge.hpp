@@ -112,8 +112,12 @@ private:
     purge::runner(argc, argv).run();                                           \
     std::cout << purge::log_book::get_instance()->generate_output().str();     \
     if (purge::log_book::get_instance()->all_tests_ok()) {                     \
+      std::cout << "=============================================\nAll tests " \
+                   "are passed!\n";                                            \
       return 0;                                                                \
     }                                                                          \
+    std::cout                                                                  \
+        << "=============================================\nTest failed\n";     \
     return 1;                                                                  \
   }
 
