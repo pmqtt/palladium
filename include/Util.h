@@ -18,7 +18,7 @@ struct Error {
   auto msg() const -> const std::string & { return message; }
 };
 
-template <class T> class ResultOr {
+template <class T, class E = Error> class ResultOr {
 public:
   ResultOr(const T &rhs) : _result(rhs) {}
   ResultOr(const Error &rhs) : _result(rhs) {}
@@ -30,23 +30,23 @@ public:
 
   auto result() const -> T {
     panic(ok());
-    return std::get<0>(_result);
+    return std::get<T>(_result);
   }
-  auto error_value() const -> const Error & {
+  auto error_value() const -> const E & {
     panic(!ok());
-    return std::get<1>(_result);
+    return std::get<E>(_result);
   }
 
   template <class Func> auto some(Func &&func) -> ResultOr<T> & {
     if (ok()) {
-      std::forward<Func>(func)(std::get<0>(_result));
+      std::forward<Func>(func)(std::get<T>(_result));
     }
     return *this;
   }
 
   template <class Func> auto error(Func &&func) -> ResultOr<T> {
     if (!ok()) {
-      std::forward<Func>(func)(std::get<1>(_result));
+      std::forward<Func>(func)(std::get<E>(_result));
     }
     return *this;
   }
@@ -54,20 +54,20 @@ public:
   template <class Func>
   auto map(Func &&func) -> ResultOr<decltype(func(std::declval<T>()))> {
     if (ok()) {
-      return std::forward<Func>(func)(std::get<0>(_result));
+      return std::forward<Func>(func)(std::get<T>(_result));
     }
-    return std::get<1>(_result);
+    return std::get<E>(_result);
   }
 
   auto result_or(const T &rhs) -> T {
     if (ok()) {
-      return std::get<0>(_result);
+      return std::get<T>(_result);
     }
     return rhs;
   }
 
 private:
-  std::variant<T, Error> _result;
+  std::variant<T, E> _result;
 };
 
 static auto err(const std::string &msg) -> Error {

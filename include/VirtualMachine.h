@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include <utility>
 #include <variant>
 
 struct FunctionEntry {
@@ -22,6 +23,11 @@ private:
   std::size_t _address;
 };
 
+struct StackFrame {
+  std::size_t pc;
+  std::vector<VMType> registers;
+};
+
 class VirtualMachine {
 public:
   VirtualMachine(const std::vector<InstructionType> &program)
@@ -31,10 +37,7 @@ public:
                     const std::vector<InstructionType> &code) {
 
     _function_section.push_back({fname, 0, _program.size()});
-    for (const auto &c : code) {
-      _program.push_back(c);
-    }
-    // std::copy(code.cbegin(), code.cend(), std::back_inserter(_program));
+    std::copy(code.cbegin(), code.cend(), std::back_inserter(_program));
   }
   auto function_address(const std::string &fname) const -> std::size_t {
     for (const auto &f_item : _function_section) {
@@ -55,26 +58,39 @@ public:
     } while (_pc != old_pc);
   }
 
-  template <class... ARG> auto init_registers(int x, ARG... args) {
-    std::vector<int> tmp = {x, args...};
+  template <class... ARG> auto init_registers(ARG &&...args) {
+    std::vector<int> tmp = {std::forward<ARG>(args)...};
     std::copy_n(tmp.begin(), std::min(tmp.size(), _registers.size()),
                 _registers.begin());
   }
   auto reg_0() const -> VMType { return _registers[0]; }
   auto registers() -> std::vector<VMType> & { return _registers; }
   void inc_pc(std::size_t inc = 1) { _pc += inc; }
+  auto pc() const -> std::size_t { return _pc; }
   void inc_sp(int inc = 1) { _sp += inc; }
   void set_sp(int sp) { _sp = sp; }
   void set_pc(std::size_t pc) { _pc = pc; }
   auto stack_pointer() const -> int { return _sp; }
   auto stack_top() -> VMType & { return _stack[_sp]; }
   void stack_pop() { _sp -= 1; }
+  void make_stack_frame() {
+    StackFrame frame = {.pc = _pc, .registers = _registers};
+    _call_stack.push_back(frame);
+  }
+  void restore_from_call_stack() {
+    StackFrame frame = _call_stack[_call_stack.size() - 1];
+    _pc = frame.pc + 1;
+    _registers = frame.registers;
+    _call_stack.pop_back();
+  }
+
   void stack_push(const VMType &value) {
     _sp += 1;
-    if (_sp < _stack.size()) {
+    if (std::cmp_less(_sp, _stack.size())) {
       _stack[_sp] = value;
+    } else {
+      _stack.push_back(value);
     }
-    _stack.push_back(value);
   }
 
 private:
@@ -84,6 +100,7 @@ private:
   std::vector<VMType> _stack;
   int _sp;
   std::vector<FunctionEntry> _function_section;
+  std::vector<StackFrame> _call_stack;
 };
 
 #endif

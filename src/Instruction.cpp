@@ -1,6 +1,7 @@
 #include "Instruction.h"
 #include "Util.h"
 #include "VirtualMachine.h"
+#include <iterator>
 #include <type_traits>
 #include <variant>
 
@@ -260,5 +261,13 @@ Call::Call(const VMType &fname) : _fname(fname) {}
 
 void Call::execute(VirtualMachine *vm) {
   std::size_t adr = vm->function_address(std::get<std::string>(_fname));
+  vm->make_stack_frame();
   vm->set_pc(adr);
 }
+
+//=====================================
+// Call Instruction
+
+RetVoid::RetVoid() {}
+
+void RetVoid::execute(VirtualMachine *vm) { vm->restore_from_call_stack(); }
