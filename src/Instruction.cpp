@@ -57,7 +57,20 @@ auto mult(VMType &lhs, VMType &rhs) -> VMType {
       lhs, rhs);
 }
 
-void Instruction::change_pc(VirtualMachine *vm) const { vm->inc_pc(); }
+auto to_string(VMType &value) -> std::string {
+  return std::visit(
+      [](const auto &v) -> std::string {
+        using L = std::remove_cvref_t<decltype(v)>;
+        if constexpr (std::is_same_v<L, std::string>) {
+          return v;
+        } else if (std::is_arithmetic_v<L>) {
+          return std::to_string(v);
+        }
+        panic(false);
+        return "";
+      },
+      value);
+}
 
 // Load Instruction
 Load::Load(std::size_t i) : _i(i) {}
@@ -65,6 +78,7 @@ Load::Load(std::size_t i) : _i(i) {}
 void Load::execute(VirtualMachine *vm) {
   auto &registers = vm->registers();
   registers[0] = registers[_i];
+  vm->inc_pc();
 }
 //======================================
 // CLoad Instruction
@@ -74,6 +88,7 @@ CLoad::CLoad(const VMType &value) : _value(value) {}
 void CLoad::execute(VirtualMachine *vm) {
   auto &registers = vm->registers();
   registers[0] = _value;
+  vm->inc_pc();
 }
 
 //======================================
@@ -87,6 +102,7 @@ void INDLoad::execute(VirtualMachine *vm) {
     int index = std::get<int>(registers[_i]);
     registers[0] = registers[index];
   }
+  vm->inc_pc();
 }
 
 //======================================
@@ -97,6 +113,7 @@ void SLoad::execute(VirtualMachine *vm) {
   auto &registers = vm->registers();
   registers[0] = vm->stack_top();
   vm->stack_pop();
+  vm->inc_pc();
 }
 
 //======================================
@@ -107,6 +124,7 @@ Store::Store(std::size_t i) : _i(i) {}
 void Store::execute(VirtualMachine *vm) {
   auto &registers = vm->registers();
   registers[_i] = registers[0];
+  vm->inc_pc();
 }
 
 //======================================
@@ -119,7 +137,9 @@ void INDStore::execute(VirtualMachine *vm) {
   if (std::holds_alternative<int>(registers[_i])) {
     int index = std::get<int>(registers[_i]);
     registers[index] = registers[0];
+    vm->inc_pc();
   }
+  panic(false);
 }
 
 //======================================
@@ -129,6 +149,7 @@ Add::Add(std::size_t i) : _i(i) {}
 void Add::execute(VirtualMachine *vm) {
   auto &registers = vm->registers();
   registers[0] = add(registers[0], registers[_i]);
+  vm->inc_pc();
 }
 
 //======================================
@@ -137,6 +158,7 @@ CAdd::CAdd(const VMType &i) : _i(i) {}
 void CAdd::execute(VirtualMachine *vm) {
   auto &registers = vm->registers();
   registers[0] = add(registers[0], _i);
+  vm->inc_pc();
 }
 
 //======================================
@@ -149,7 +171,9 @@ void INDAdd::execute(VirtualMachine *vm) {
   if (std::holds_alternative<int>(registers[_i])) {
     int index = std::get<int>(registers[_i]);
     registers[0] = add(registers[0], registers[index]);
+    vm->inc_pc();
   }
+  panic(false);
 }
 
 //======================================
@@ -159,29 +183,26 @@ If::If(std::size_t cond, const VMType &value, std::size_t target)
 
 void If::execute(VirtualMachine *vm) {
   auto &registers = vm->registers();
-  _register_value = registers[0];
-}
-
-void If::change_pc(VirtualMachine *vm) const {
+  auto register_value = registers[0];
   bool condition = false;
   switch (_cond) {
   case 0:
-    condition = (_register_value < _value);
+    condition = (register_value < _value);
     break;
   case 1:
-    condition = (_register_value > _value);
+    condition = (register_value > _value);
     break;
   case 2:
-    condition = (_register_value == _value);
+    condition = (register_value == _value);
     break;
   case 3:
-    condition = (_register_value != _value);
+    condition = (register_value != _value);
     break;
   case 4:
-    condition = (_register_value <= _value);
+    condition = (register_value <= _value);
     break;
   case 5:
-    condition = (_register_value >= _value);
+    condition = (register_value >= _value);
     break;
   }
   if (condition) {
@@ -195,24 +216,49 @@ void If::change_pc(VirtualMachine *vm) const {
 // Goto Instruction
 
 Goto::Goto(std::size_t i) : _i(i) {}
-void Goto::execute(VirtualMachine *vm) {}
-void Goto::change_pc(VirtualMachine *vm) const { vm->set_pc(_i); }
+void Goto::execute(VirtualMachine *vm) { vm->set_pc(_i); }
 
 //======================================
 // Halt Instruction
 
 Halt::Halt() {}
 void Halt::execute(VirtualMachine *vm) {}
-void Halt::change_pc(VirtualMachine *vm) const {}
 
 //======================================
 // Push Instruction
 
 Push::Push(const VMType &value) : _value(value) {}
-void Push::execute(VirtualMachine *vm) { vm->stack_push(_value); }
+void Push::execute(VirtualMachine *vm) {
+  vm->stack_push(_value);
+  vm->inc_pc();
+}
 
 //======================================
 // Push Instruction
 
 Pop::Pop() {}
-void Pop::execute(VirtualMachine *vm) { vm->stack_pop(); }
+void Pop::execute(VirtualMachine *vm) {
+  vm->stack_pop();
+  vm->inc_pc();
+}
+
+//=====================================
+// Print Instruction
+
+Print::Print() {}
+void Print::execute(VirtualMachine *vm) {
+  auto v = vm->stack_top();
+  vm->stack_pop();
+  std::cout << to_string(v);
+  vm->inc_pc();
+}
+
+//=====================================
+// Call Instruction
+
+Call::Call(const VMType &fname) : _fname(fname) {}
+
+void Call::execute(VirtualMachine *vm) {
+  std::size_t adr = vm->function_address(std::get<std::string>(_fname));
+  vm->set_pc(adr);
+}
