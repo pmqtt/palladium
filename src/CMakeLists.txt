@@ -4,7 +4,9 @@ add_library(OBJECT_LIB OBJECT)
 
 target_sources(OBJECT_LIB PRIVATE
   Lexer.cpp
-  LexerStream.cpp)
+  LexerStream.cpp
+  Instruction.cpp
+)
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_link_libraries(OBJECT_LIB -fsanitize=address)

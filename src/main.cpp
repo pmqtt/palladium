@@ -1,13 +1,24 @@
+#include "Instruction.h"
 #include "Lexer.h"
 #include "Util.h"
+#include "VirtualMachine.h"
 #include <iostream>
 
 auto main(int argc, char **argv) -> int {
   UNUSED(argc);
   UNUSED(argv);
 
-  Token tk(TokenKind::IDENTIFIER, "HALLO");
+  std::vector<InstructionType> program;
+  program.push_back(Load(1));
+  program.push_back(Add(2));
+  program.push_back(If(4, 200, 1));
+  program.push_back(Halt());
 
-  std::cout << "hallo welt:" << TokenKind::IDENTIFIER << std::endl;
+  VirtualMachine vm(program);
+  vm.init_registers(0, 10, 20);
+  vm.run();
+
+  std::cout << "Register[0]:" << std::get<int>(vm.reg_0()) << std::endl;
+
   return 0;
 }
