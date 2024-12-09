@@ -4,6 +4,7 @@
 #include "Util.h"
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -34,27 +35,34 @@ public:
       : _program(program), _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1) {}
 
   void add_function(const std::string fname,
-                    const std::vector<InstructionType> &code) {
+                    const std::vector<InstructionType> &code,
+                    uint8_t arg_count) {
 
-    _function_section.push_back({fname, 0, _program.size()});
+    _function_section.push_back({fname, arg_count, _program.size()});
     std::copy(code.cbegin(), code.cend(), std::back_inserter(_program));
   }
-  auto function_address(const std::string &fname) const -> std::size_t {
+  auto function_entry(const std::string &fname) const -> const FunctionEntry {
     for (const auto &f_item : _function_section) {
       if (f_item.name() == fname) {
-        return f_item.address();
+        return f_item;
       }
     }
-    panic(false);
-    return 0;
+    panic("function " + fname + " not exist");
   }
 
   void run() {
     std::size_t old_pc = 0;
     do {
       old_pc = _pc;
-      std::visit([&](auto &instruction) { instruction.execute(this); },
-                 _program[_pc]);
+      std::visit(
+          [&](auto &instruction) {
+            InstructionResult res = instruction.execute(this);
+            res.error([](const Error &err) {
+              std::cerr << "Instruction failed: " << err.msg() << "\n";
+              std::abort();
+            });
+          },
+          _program[_pc]);
     } while (_pc != old_pc);
   }
 

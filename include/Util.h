@@ -7,11 +7,13 @@
 #include <variant>
 #define UNUSED(x) (void)(x)
 
-inline void panic(bool expr, int status = 1) {
+inline void panic_if(bool expr, int status = 1) {
   if (!expr) {
     ::exit(status);
   }
 }
+
+[[noreturn]] void panic(const std::string &message = "", int status = 1);
 
 struct Error {
   std::string message;
@@ -29,11 +31,11 @@ public:
   operator bool() const { return ok(); }
 
   auto result() const -> T {
-    panic(ok());
+    panic_if(ok());
     return std::get<T>(_result);
   }
   auto error_value() const -> const E & {
-    panic(!ok());
+    panic_if(!ok());
     return std::get<E>(_result);
   }
 
@@ -70,9 +72,7 @@ private:
   std::variant<T, E> _result;
 };
 
-static auto err(const std::string &msg) -> Error {
-  return Error{.message = msg};
-}
+auto err(const std::string &msg) -> Error;
 
 template <class T> class Switch {
 public:
