@@ -8,6 +8,7 @@ target_sources(OBJECT_LIB PRIVATE
   Instruction.cpp
   Util.cpp
   VMType.cpp
+  VMStruct.cpp
 )
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug")
