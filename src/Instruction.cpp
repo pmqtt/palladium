@@ -1,87 +1,13 @@
 #include "Instruction.h"
 #include "Util.h"
+#include "VMType.h"
 #include "VirtualMachine.h"
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <string>
 #include <type_traits>
 #include <variant>
-
-template <class L, class R>
-auto create_operator_error(const std::string &str) -> Error {
-  std::string e = str;
-  e += " not permitted (";
-  e += typeid(L).name();
-  e += ",";
-  e += typeid(R).name();
-  e += ")";
-  return err(e);
-}
-
-auto add(VMType &lhs, VMType &rhs) -> ResultOr<VMType> {
-  return std::visit(
-      [](const auto &lhv, const auto &rhv) -> ResultOr<VMType> {
-        using L = std::remove_cvref_t<decltype(lhv)>;
-        using R = std::remove_cvref_t<decltype(rhv)>;
-
-        if constexpr (std::is_arithmetic_v<L> && std::is_arithmetic_v<R>) {
-          using CommonType = std::common_type_t<L, R>;
-          return {static_cast<CommonType>(lhv) +
-                  static_cast<CommonType>(rhv)}; // Numerische Addition
-        } else if constexpr (std::is_same_v<L, std::string> &&
-                             std::is_same_v<R, std::string>) {
-          return {lhv + rhv}; // String-Konkatenation
-        }
-        return create_operator_error<L, R>("add");
-      },
-      lhs, rhs);
-}
-
-auto sub(VMType &lhs, VMType &rhs) -> ResultOr<VMType> {
-  return std::visit(
-      [](const auto &lhv, const auto &rhv) -> ResultOr<VMType> {
-        using L = std::remove_cvref_t<decltype(lhv)>;
-        using R = std::remove_cvref_t<decltype(rhv)>;
-
-        if constexpr (std::is_arithmetic_v<L> && std::is_arithmetic_v<R>) {
-          using CommonType = std::common_type_t<L, R>;
-          return {static_cast<CommonType>(lhv) -
-                  static_cast<CommonType>(rhv)}; // Numerische Addition
-        }
-        return create_operator_error<L, R>("sub");
-      },
-      lhs, rhs);
-}
-
-auto mult(VMType &lhs, VMType &rhs) -> ResultOr<VMType> {
-  return std::visit(
-      [](const auto &lhv, const auto &rhv) -> ResultOr<VMType> {
-        using L = std::remove_cvref_t<decltype(lhv)>;
-        using R = std::remove_cvref_t<decltype(rhv)>;
-        if constexpr (std::is_arithmetic_v<L> && std::is_arithmetic_v<R>) {
-          using CommonType = std::common_type_t<L, R>;
-          return {static_cast<CommonType>(lhv) *
-                  static_cast<CommonType>(rhv)}; // Numerische Addition
-        }
-        return create_operator_error<L, R>("mult");
-      },
-      lhs, rhs);
-}
-
-auto to_string(VMType &value) -> ResultOr<std::string> {
-  return std::visit(
-      [](const auto &v) -> ResultOr<std::string> {
-        using L = std::remove_cvref_t<decltype(v)>;
-        if constexpr (std::is_same_v<L, std::string>) {
-          return v;
-        } else if (std::is_arithmetic_v<L>) {
-          return std::to_string(v);
-        }
-        return err("to_string not permitted on type " +
-                   std::string(typeid(L).name()));
-      },
-      value);
-}
 
 // Load Instruction
 Load::Load(std::size_t i) : _i(i) {}
@@ -111,8 +37,8 @@ INDLoad::INDLoad(std::size_t i) : _i(i) {}
 
 auto INDLoad::execute(VirtualMachine *vm) -> InstructionResult {
   auto &registers = vm->registers();
-  if (std::holds_alternative<int>(registers[_i])) {
-    int index = std::get<int>(registers[_i]);
+  if (is_vm_type<int>(registers[_i])) {
+    int index = vm_type_get<int>(registers[_i]);
     registers[0] = registers[index];
   }
   vm->inc_pc();
@@ -151,8 +77,8 @@ INDStore::INDStore(std::size_t i) : _i(i) {}
 
 auto INDStore::execute(VirtualMachine *vm) -> InstructionResult {
   auto &registers = vm->registers();
-  if (std::holds_alternative<int>(registers[_i])) {
-    int index = std::get<int>(registers[_i]);
+  if (is_vm_type<int>(registers[_i])) {
+    int index = vm_type_get<int>(registers[_i]);
     registers[index] = registers[0];
     vm->inc_pc();
   }
@@ -196,8 +122,8 @@ INDAdd::INDAdd(std::size_t i) : _i(i) {}
 
 auto INDAdd::execute(VirtualMachine *vm) -> InstructionResult {
   auto &registers = vm->registers();
-  if (std::holds_alternative<int>(registers[_i])) {
-    int index = std::get<int>(registers[_i]);
+  if (is_vm_type<int>(registers[_i])) {
+    int index = vm_type_get<int>(registers[_i]);
     auto res = add(registers[0], registers[index]);
     if (res.ok()) {
       registers[0] = res.result();
@@ -216,26 +142,28 @@ If::If(std::size_t cond, const VMType &value, std::size_t target)
 
 auto If::execute(VirtualMachine *vm) -> InstructionResult {
   auto &registers = vm->registers();
-  auto register_value = registers[0];
+  auto register_value = std::get<VMPrimitive>(registers[0]);
+  auto value = std::get<VMPrimitive>(_value);
   bool condition = false;
+
   switch (_cond) {
   case 0:
-    condition = (register_value < _value);
+    condition = (register_value < value);
     break;
   case 1:
-    condition = (register_value > _value);
+    condition = (register_value > value);
     break;
   case 2:
-    condition = (register_value == _value);
+    condition = (register_value == value);
     break;
   case 3:
-    condition = (register_value != _value);
+    condition = (register_value != value);
     break;
   case 4:
-    condition = (register_value <= _value);
+    condition = (register_value <= value);
     break;
   case 5:
-    condition = (register_value >= _value);
+    condition = (register_value >= value);
     break;
   }
   if (condition) {
@@ -301,12 +229,30 @@ auto Print::execute(VirtualMachine *vm) -> InstructionResult {
 }
 
 //=====================================
+// Print Instruction
+
+PrintRegStructField::PrintRegStructField(std::size_t i, std::size_t adr)
+    : _i(i), _adr(adr) {}
+
+auto PrintRegStructField::execute(VirtualMachine *vm) -> InstructionResult {
+  auto &v = std::get<VMStruct>(vm->registers()[_i]).get_field(_adr);
+  VMType field_value = std::get<VMPrimitive>(v);
+  auto res = to_string(field_value);
+  if (res.ok()) {
+    std::cout << res.result();
+    vm->inc_pc();
+    return true;
+  }
+  return res.error_value();
+}
+
+//=====================================
 // Call Instruction
 
 Call::Call(const VMType &fname) : _fname(fname) {}
 
 auto Call::execute(VirtualMachine *vm) -> InstructionResult {
-  std::string fname = std::get<std::string>(_fname);
+  std::string fname = vm_type_get<std::string>(_fname).result_or("");
 
   const FunctionEntry &entry = vm->function_entry(fname);
   vm->make_stack_frame();
@@ -342,5 +288,43 @@ auto Return::execute(VirtualMachine *vm) -> InstructionResult {
   const VMType ret_value = vm->registers()[_i];
   vm->restore_from_call_stack();
   vm->stack_push(ret_value);
+  return true;
+}
+
+//=====================================
+// StructCreate Instruction
+
+StructCreate::StructCreate(std::size_t i, std::size_t sz) : _i(i), _sz(sz) {}
+
+auto StructCreate::execute(VirtualMachine *vm) -> InstructionResult {
+  vm->registers()[_i] = VMStruct(_sz);
+  vm->inc_pc();
+  return true;
+}
+
+//=====================================
+// AddField
+
+AddField::AddField(std::size_t i, const VMStructTypes &type)
+    : _i(i), _type(type) {}
+
+auto AddField::execute(VirtualMachine *vm) -> InstructionResult {
+  auto &s = std::get<VMStruct>(vm->registers()[_i]);
+  s.add_field(_type);
+  vm->inc_pc();
+  return true;
+}
+
+//=====================================
+// SetField
+
+SetField::SetField(std::size_t i, std::size_t field_adr,
+                   const VMStructTypes &type)
+    : _i(i), _field_adr(field_adr), _type(type) {}
+
+auto SetField::execute(VirtualMachine *vm) -> InstructionResult {
+  auto &s = std::get<VMStruct>(vm->registers()[_i]);
+  s.set_field(_field_adr, _type);
+  vm->inc_pc();
   return true;
 }

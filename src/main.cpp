@@ -1,6 +1,7 @@
 #include "Instruction.h"
 #include "Lexer.h"
 #include "Util.h"
+#include "VMType.h"
 #include "VirtualMachine.h"
 #include <iostream>
 
@@ -21,6 +22,9 @@ auto main(int argc, char **argv) -> int {
   program.push_back(Push(13));
   program.push_back(Call("add_nr"));
   program.push_back(Print());
+  program.push_back(StructCreate(1, 1));
+  program.push_back(AddField(1, 3.145f));
+  program.push_back(PrintRegStructField(1, 0));
   program.push_back(Halt());
 
   VirtualMachine vm(program);
@@ -36,7 +40,7 @@ auto main(int argc, char **argv) -> int {
   vm.init_registers(0, 10, 20);
   vm.run();
 
-  std::cout << "\nRegister[0]:" << std::get<int>(vm.reg_0()) << std::endl;
+  std::cout << "\nRegister[0]:" << vm_type_get<int>(vm.reg_0()) << std::endl;
 
   return 0;
 }

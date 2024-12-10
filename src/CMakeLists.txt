@@ -7,6 +7,7 @@ target_sources(OBJECT_LIB PRIVATE
   LexerStream.cpp
   Instruction.cpp
   Util.cpp
+  VMType.cpp
 )
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug")
