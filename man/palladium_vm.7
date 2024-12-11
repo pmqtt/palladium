@@ -1,0 +1,184 @@
+.TH PALLADIUM_VM "7" "Dezember 2024" "Palladium Virtual Machine" "Benutzerbefehle"
+.SH NAME
+palladium_vm \- Instruction Set für die Palladium Virtual Machine
+
+.SH BESCHREIBUNG
+Die Palladium Virtual Machine (VM) ist eine stack- und registerbasierte virtuelle Maschine,
+die eine Sammlung von Anweisungen zur Manipulation von Daten, zur Kontrolle des Programmflusses
+und zur Durchführung arithmetischer Operationen bereitstellt.
+
+Diese Manpage beschreibt die Anweisungen, die die VM versteht, sowie ihre Syntax und Funktionsweise.
+
+.SH BEFEHLSTABELLE
+.nf
+.TS
+allbox;
+l l l l.
+Befehl	Argumente	Beschreibung	Byte
+Load	Register Nummer	c(0) = c(i)	0x0010
+CLoad	VMType	c(0) = const	0x0020
+IndLoad	Register Nummer	c(0) = c(c(i))	0x0030
+SLoad	Register Nummer	c(i) = stack.pop()	0x0040
+Store	Register Nummer	c(i) = c(0)	0x0050
+INDStore	Register Nummer	c(c(i)) = c(0)	0x0060
+Add	Register Nummer	c(0) = c(0) + c(i)	0x0070
+CAdd	VMType	c(0) = c(0) + const	0x0080
+INDAdd	Register Nummer	c(0) = c(0) + c(c(i))	0x0090
+If	cond, VMType, Ziel-Adresse	Jump, falls Bedingung erfüllt	0x00A0
+Goto	Ziel-Adresse	Unbedingter Sprung	0x00B0
+Halt	keine	Stoppt die Ausführung der VM	0x00C0
+Push	VMType	stack.push(value)	0x00D0
+Pop	keine	stack.pop()	0x00E0
+stack_top	keine	Liest obersten Stack-Wert	0x00F0
+Print	Register und Feldadresse	Gibt den obersten Stack-Wert aus	0x0100
+PrintRegStructField	keine	Gibt das Feld im gespeicherten VMStruct zurück	0x0101
+Call	Funktionsname	Springt zur Funktion und speichert Zustand	0x0110
+RetVoid	keine	Kehrt von Funktion zurück	0x0120
+Return	Register Nummber	Kehrt von Funktion zurück| stack.push(register)	0x0120
+StructCreate	Register Nummber, Anzahl Felder	c(i) = Struct	0x0130
+AddField	Register Nummber von einem VMStruct, VMStructType	c(i) = Struct.AddField	0x0131
+SetField	Register Nummber von einem VMStruct, Adresse des Feldes, VMStructType	c(i).Field(adresse) =VMStructType 	0x0131
+.TE
+.fi
+
+.SH ANWEISUNGEN
+Die Anweisungen sind in Kategorien eingeteilt: Datenmanipulation, Kontrollfluss, Arithmetik,
+Stack-Operationen und E/A.
+
+.SS "1. Datenmanipulation"
+.TP
+\fBLoad i\fR
+Lädt den Wert aus Register \fIc(i)\fR in das Register \fIc(0)\fR.
+.br
+Beispiel: \fBLoad 2\fR kopiert den Wert aus Register 2 in Register 0.
+
+.TP
+\fBCLoad value\fR
+Lädt einen konstanten Wert in \fIc(0)\fR.
+.br
+Beispiel: \fBCLoad 42\fR setzt \fIc(0)\fR auf 42.
+
+.TP
+\fBINDLoad i\fR
+Lädt den Wert aus dem Register, dessen Index in \fIc(i)\fR gespeichert ist, in \fIc(0)\fR.
+.br
+Beispiel: Wenn \fIc(1) = 3\fR, dann lädt \fBINDLoad 1\fR den Wert aus Register 3 in \fIc(0)\fR.
+
+.TP
+\fBSLoad i\fR
+Lädt den obersten Wert des Stacks in \fIc(i)\fR.
+.br
+Beispiel: \fBSLoad 1\fR speichert den obersten Stack-Wert in \fIc(1)\fR.
+
+.TP
+\fBStore i\fR
+Speichert den Wert von \fIc(0)\fR in \fIc(i)\fR.
+.br
+Beispiel: \fBStore 2\fR speichert den Wert von \fIc(0)\fR in \fIc(2)\fR.
+
+.TP
+\fBINDStore i\fR
+Speichert den Wert von \fIc(0)\fR in das Register, dessen Index in \fIc(i)\fR gespeichert ist.
+.br
+Beispiel: Wenn \fIc(1) = 4\fR, speichert \fBINDStore 1\fR den Wert von \fIc(0)\fR in \fIc(4)\fR.
+
+.SS "2. Kontrollfluss"
+.TP
+\fBIf cond value target\fR
+Springt zu \fItarget\fR, wenn die Bedingung \fIcond\fR erfüllt ist.
+.br
+Bedingungen:
+.br
+\fB0\fR: <, \fB1\fR: >, \fB2\fR: ==, \fB3\fR: !=, \fB4\fR: <=, \fB5\fR: >=.
+.br
+Beispiel: \fBIf 0 10 5\fR springt zu Adresse 5, wenn \fIc(0) < 10\fR.
+
+.TP
+\fBGoto i\fR
+Springt zu Adresse \fIi\fR.
+.br
+Beispiel: \fBGoto 10\fR setzt den Program Counter auf 10.
+
+.TP
+\fBHalt\fR
+Stoppt die Ausführung der VM.
+.br
+Beispiel: \fBHalt\fR beendet das Programm.
+
+.SS "3. Arithmetik"
+.TP
+\fBAdd i\fR
+Addiert den Wert in \fIc(i)\fR zu \fIc(0)\fR und speichert das Ergebnis in \fIc(0)\fR.
+.br
+Beispiel: \fBAdd 3\fR addiert den Wert von \fIc(3)\fR zu \fIc(0)\fR.
+
+.TP
+\fBCAdd value\fR
+Addiert einen konstanten Wert zu \fIc(0)\fR.
+.br
+Beispiel: \fBCAdd 5\fR addiert 5 zu \fIc(0)\fR.
+
+.TP
+\fBINDAdd i\fR
+Addiert den Wert in \fIc(c(i))\fR zu \fIc(0)\fR.
+.br
+Beispiel: \fBINDAdd 2\fR addiert den Wert aus dem Register, dessen Index in \fIc(2)\fR gespeichert ist, zu \fIc(0)\fR.
+
+.SS "4. Stack-Operationen"
+.TP
+\fBPush value\fR
+Schiebt einen Wert auf den Stack.
+.br
+Beispiel: \fBPush 10\fR fügt 10 auf den Stack.
+
+.TP
+\fBPop\fR
+Entfernt den obersten Wert vom Stack.
+.br
+Beispiel: \fBPop\fR entfernt den obersten Wert des Stacks.
+
+.TP
+\fBstack_top\fR
+Liest den obersten Wert des Stacks, ohne ihn zu entfernen.
+.br
+Beispiel: \fBstack_top\fR liefert den aktuellen Wert des Stacks.
+
+.SS "5. E/A"
+.TP
+\fBPrint\fR
+Gibt den obersten Wert des Stacks aus.
+.br
+Beispiel: \fBPrint\fR gibt den obersten Stackwert aus und entfernt ihn.
+
+.SS "6. Funktionsaufrufe"
+.TP
+\fBCall fname\fR
+Springt zur Adresse der Funktion \fIfname\fR und speichert den aktuellen Zustand.
+.br
+Beispiel: \fBCall "myFunction"\fR ruft die Funktion \fImyFunction\fR auf.
+
+.TP
+\fBRetVoid\fR
+Kehrt zum Funktionsaufrufer zurück.
+.br
+Beispiel: \fBRetVoid\fR setzt den vorherigen Funktionszustand zurück.
+
+.SH BEISPIELPROGRAMM
+.TP
+Ein Programm, das zwei Zahlen addiert und das Ergebnis ausgibt:
+.nf
+CLoad 10        # Lade 10 in c(0)
+Push c(0)       # Schiebe 10 auf den Stack
+CLoad 20        # Lade 20 in c(0)
+Push c(0)       # Schiebe 20 auf den Stack
+Pop             # Entferne 20 vom Stack
+Add 0           # Addiere c(0) zum Stackwert
+Print           # Gib das Ergebnis aus
+Halt            # Beende die VM
+.fi
+
+.SH FEHLER
+Unbekannte Anweisungen oder ungültige Werte führen zum Anhalten der VM mit einer Fehlermeldung.
+
+.SH AUTOR
+Palladium Virtual Machine Entwicklerteam
