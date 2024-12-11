@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stacktrace>
 #include <string>
+#include <type_traits>
 #include <variant>
 #define UNUSED(x) (void)(x)
 
@@ -88,5 +89,13 @@ private:
   T &_value;
   T _reset_value;
 };
+
+template <class X, class Y> struct is_comparable {
+  static constexpr bool value =
+      std::is_arithmetic_v<X> && std::is_arithmetic_v<Y>;
+};
+
+template <class X, class Y>
+constexpr bool is_comparable_v = is_comparable<X, Y>::value;
 
 #endif

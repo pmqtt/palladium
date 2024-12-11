@@ -32,7 +32,8 @@ struct StackFrame {
 class VirtualMachine {
 public:
   VirtualMachine(const std::vector<InstructionType> &program)
-      : _program(program), _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1) {}
+      : _program(program), _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1),
+        _memory(1000) {}
 
   void add_function(const std::string fname,
                     const std::vector<InstructionType> &code,
@@ -109,6 +110,7 @@ private:
   int _sp;
   std::vector<FunctionEntry> _function_section;
   std::vector<StackFrame> _call_stack;
+  std::vector<VMType> _memory;
 };
 
 #endif
