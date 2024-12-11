@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -22,6 +23,27 @@ private:
   std::string _name;
   uint8_t _argument_count;
   std::size_t _address;
+};
+
+using NativeFunction = std::function<ResultOr<bool>(
+    VirtualMachine *vm, const std::vector<VMType> &)>;
+
+struct NativeFunctionEntry {
+  NativeFunctionEntry(std::string name, const NativeFunction &func,
+                      uint8_t arg_count)
+      : _name(name), _func(func), _argument_count(arg_count) {}
+
+  auto name() const -> const std::string & { return _name; }
+  auto argument_count() const -> uint8_t { return _argument_count; }
+  auto operator()(VirtualMachine *vm, const std::vector<VMType> &args) const
+      -> ResultOr<bool> {
+    return _func(vm, args);
+  }
+
+private:
+  std::string _name;
+  NativeFunction _func;
+  uint8_t _argument_count;
 };
 
 struct StackFrame {
@@ -49,6 +71,21 @@ public:
       }
     }
     panic("function " + fname + " not exist");
+  }
+
+  void add_native_function(const std::string fname, const NativeFunction &code,
+                           uint8_t arg_count) {
+
+    _native_section.emplace_back(fname, code, arg_count);
+  }
+  auto native_function_entry(const std::string &fname) const
+      -> const NativeFunctionEntry {
+    for (const auto &f_item : _native_section) {
+      if (f_item.name() == fname) {
+        return f_item;
+      }
+    }
+    panic("native function " + fname + " not exist");
   }
 
   void run() {
@@ -109,6 +146,7 @@ private:
   std::vector<VMType> _stack;
   int _sp;
   std::vector<FunctionEntry> _function_section;
+  std::vector<NativeFunctionEntry> _native_section;
   std::vector<StackFrame> _call_stack;
   std::vector<VMType> _memory;
 };

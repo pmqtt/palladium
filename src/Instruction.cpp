@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <ostream>
 #include <string>
 #include <type_traits>
 #include <variant>
@@ -222,6 +223,7 @@ auto Print::execute(VirtualMachine *vm) -> InstructionResult {
   auto res = to_string(v);
   if (res.ok()) {
     std::cout << res.result();
+    std::flush(std::cout);
     vm->inc_pc();
     return true;
   }
@@ -240,6 +242,7 @@ auto PrintRegStructField::execute(VirtualMachine *vm) -> InstructionResult {
   auto res = to_string(field_value);
   if (res.ok()) {
     std::cout << res.result();
+    std::flush(std::cout);
     vm->inc_pc();
     return true;
   }
@@ -256,7 +259,6 @@ auto Call::execute(VirtualMachine *vm) -> InstructionResult {
 
   const FunctionEntry &entry = vm->function_entry(fname);
   vm->make_stack_frame();
-  vm->set_pc(entry.address());
   if (vm->registers().size() <= entry.argument_count()) {
     return err("Function " + fname +
                " not enough registers to store arguments");
@@ -266,6 +268,30 @@ auto Call::execute(VirtualMachine *vm) -> InstructionResult {
     vm->registers()[i] = value;
     vm->stack_pop();
   }
+  vm->set_pc(entry.address());
+  return true;
+}
+
+//=====================================
+// CallNative Instruction
+
+CallNative::CallNative(const VMType &fname) : _fname(fname) {}
+
+auto CallNative::execute(VirtualMachine *vm) -> InstructionResult {
+  std::string fname = vm_type_get<std::string>(_fname).result_or("");
+
+  const NativeFunctionEntry &entry = vm->native_function_entry(fname);
+  std::vector<VMType> args;
+  for (uint8_t i = 0; i < entry.argument_count(); ++i) {
+    auto value = vm->stack_top();
+    args.push_back(value);
+    vm->stack_pop();
+  }
+  auto res = entry(vm, args);
+  if (!res) {
+    return res;
+  }
+  vm->inc_pc();
   return true;
 }
 

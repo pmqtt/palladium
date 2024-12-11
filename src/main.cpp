@@ -5,6 +5,24 @@
 #include "VirtualMachine.h"
 #include <iostream>
 
+ResultOr<bool> palladium_write(VirtualMachine *vm,
+                               const std::vector<VMType> &args) {
+  UNUSED(vm);
+  auto fd = get_primitive_t<int>(args[0]);
+  if (!fd) {
+    return fd.error_value();
+  }
+  auto value = get_primitive_t<std::string>(args[1]);
+  if (!value) {
+    return value.error_value();
+  }
+  auto str = value.result();
+  if (::write(fd.result(), str.c_str(), str.length()) < 0) {
+    return err("write failed ");
+  }
+  return true;
+}
+
 auto main(int argc, char **argv) -> int {
   UNUSED(argc);
   UNUSED(argv);
@@ -25,9 +43,13 @@ auto main(int argc, char **argv) -> int {
   program.push_back(StructCreate(1, 1));
   program.push_back(AddField(1, 3.145f));
   program.push_back(PrintRegStructField(1, 0));
+  program.push_back(Push("\nnativewrite\n")); // string to write
+  program.push_back(Push(1));                 // fd stdout
+  program.push_back(CallNative("write"));
   program.push_back(Halt());
 
   VirtualMachine vm(program);
+  vm.add_native_function("write", palladium_write, 2);
 
   std::vector<InstructionType> fcode1 = {Push("Hallo Welt from function\n"),
                                          Print(), RetVoid()};
