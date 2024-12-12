@@ -2,7 +2,9 @@
 #define _PALLADIUM_VM_H
 #include "Instruction.h"
 #include "Util.h"
+#include "VMType.h"
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -25,24 +27,25 @@ private:
   std::size_t _address;
 };
 
-using NativeFunction = std::function<ResultOr<bool>(
-    VirtualMachine *vm, const std::vector<VMType> &)>;
+template <class VM>
+using NativeFunction =
+    std::function<ResultOr<bool>(VM *vm, const std::vector<VMType> &)>;
 
-struct NativeFunctionEntry {
-  NativeFunctionEntry(std::string name, const NativeFunction &func,
+template <class VM> struct NativeFunctionEntry {
+  NativeFunctionEntry(std::string name, const NativeFunction<VM> &func,
                       uint8_t arg_count)
       : _name(name), _func(func), _argument_count(arg_count) {}
 
   auto name() const -> const std::string & { return _name; }
   auto argument_count() const -> uint8_t { return _argument_count; }
-  auto operator()(VirtualMachine *vm, const std::vector<VMType> &args) const
+  auto operator()(VM *vm, const std::vector<VMType> &args) const
       -> ResultOr<bool> {
     return _func(vm, args);
   }
 
 private:
   std::string _name;
-  NativeFunction _func;
+  NativeFunction<VM> _func;
   uint8_t _argument_count;
 };
 
@@ -51,14 +54,35 @@ struct StackFrame {
   std::vector<VMType> registers;
 };
 
-class VirtualMachine {
+struct AggresivPolicy {
+  static void check_stack_bounds([[maybe_unused]] std::size_t sp,
+                                 [[maybe_unused]] std::size_t max_size) {}
+};
+
+struct DebubPolicy {
+  static void check_stack_bounds(std::size_t sp, std::size_t max_size) {
+    if (sp >= max_size) {
+      panic("Stack overflow");
+    }
+  }
+};
+
+template <class POLICY> class VirtualMachine {
 public:
-  VirtualMachine(const std::vector<InstructionType> &program)
+  using P = POLICY;
+  using InstructionTypeV = InstructionType<VirtualMachine<POLICY>>;
+
+public:
+  static auto make(const std::vector<InstructionTypeV> &program)
+      -> VirtualMachine<P> {
+    return VirtualMachine<P>(program);
+  }
+  VirtualMachine(const std::vector<InstructionTypeV> &program)
       : _program(program), _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1),
         _memory(1000) {}
 
   void add_function(const std::string fname,
-                    const std::vector<InstructionType> &code,
+                    const std::vector<InstructionTypeV> &code,
                     uint8_t arg_count) {
 
     _function_section.push_back({fname, arg_count, _program.size()});
@@ -73,13 +97,14 @@ public:
     panic("function " + fname + " not exist");
   }
 
-  void add_native_function(const std::string fname, const NativeFunction &code,
+  void add_native_function(const std::string fname,
+                           const NativeFunction<VirtualMachine<POLICY>> &code,
                            uint8_t arg_count) {
 
     _native_section.emplace_back(fname, code, arg_count);
   }
   auto native_function_entry(const std::string &fname) const
-      -> const NativeFunctionEntry {
+      -> const NativeFunctionEntry<VirtualMachine<POLICY>> {
     for (const auto &f_item : _native_section) {
       if (f_item.name() == fname) {
         return f_item;
@@ -117,8 +142,14 @@ public:
   void set_sp(int sp) { _sp = sp; }
   void set_pc(std::size_t pc) { _pc = pc; }
   auto stack_pointer() const -> int { return _sp; }
-  auto stack_top() -> VMType & { return _stack[_sp]; }
-  void stack_pop() { _sp -= 1; }
+  auto stack_top() -> VMType & {
+    P::check_stack_bounds(_sp, _stack.max_size());
+    return _stack[_sp];
+  }
+  void stack_pop() {
+    _sp -= 1;
+    P::check_stack_bounds(_sp, _stack.max_size());
+  }
   void make_stack_frame() {
     StackFrame frame = {.pc = _pc, .registers = _registers};
     _call_stack.push_back(frame);
@@ -132,6 +163,7 @@ public:
 
   void stack_push(const VMType &value) {
     _sp += 1;
+    P::check_stack_bounds(_sp, _stack.max_size());
     if (std::cmp_less(_sp, _stack.size())) {
       _stack[_sp] = value;
     } else {
@@ -140,13 +172,13 @@ public:
   }
 
 private:
-  std::vector<InstructionType> _program;
+  std::vector<InstructionTypeV> _program;
   std::vector<VMType> _registers;
   std::size_t _pc;
   std::vector<VMType> _stack;
   int _sp;
   std::vector<FunctionEntry> _function_section;
-  std::vector<NativeFunctionEntry> _native_section;
+  std::vector<NativeFunctionEntry<VirtualMachine<POLICY>>> _native_section;
   std::vector<StackFrame> _call_stack;
   std::vector<VMType> _memory;
 };
