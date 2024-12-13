@@ -53,7 +53,7 @@ auto add(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;
 auto sub(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;
 auto mult(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;
 auto div(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;
-auto to_string(VMType &value) -> ResultOr<std::string>;
+auto to_string(const VMType &value) -> ResultOr<std::string>;
 
 auto operator<(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
 auto operator>(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
@@ -61,6 +61,8 @@ auto operator<=(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
 auto operator>=(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
 auto operator!=(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
 auto operator==(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
+
+auto to_string(const VMStructTypes &type) -> ResultOr<std::string>;
 
 template <class T>
 auto vm_primitive_holds_alternative(const VMPrimitive &type) -> bool {

@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
-#include <memory>
 #include <utility>
 #include <variant>
 
@@ -55,16 +54,49 @@ struct StackFrame {
 };
 
 struct AggresivPolicy {
-  static void check_stack_bounds([[maybe_unused]] std::size_t sp,
+  static void check_stack_bounds([[maybe_unused]] int sp,
                                  [[maybe_unused]] std::size_t max_size) {}
+  static void print_dbg([[maybe_unused]] const std::string &inst) {}
+  template <class VM>
+  static void check_register_bounds([[maybe_unused]] VM *vm,
+                                    [[maybe_unused]] std::size_t index) {}
 };
 
-struct DebubPolicy {
-  static void check_stack_bounds(std::size_t sp, std::size_t max_size) {
-    if (sp >= max_size) {
+struct DebugPolicy {
+  static void check_stack_bounds(int sp, std::size_t max_size) {
+    if (sp < -1) {
+      panic("Stack underflow");
+    }
+    if (std::cmp_greater_equal(sp, max_size)) {
       panic("Stack overflow");
     }
   }
+  static void print_dbg(const std::string &inst) {
+    std::string msg;
+    for (auto &c : inst) {
+      if (std::isspace(c) && c != ' ') {
+        msg += "\\n";
+      } else {
+        msg += c;
+      }
+    }
+    std::cout << msg << std::endl;
+  }
+  template <class VM>
+  static void check_register_bounds(VM *vm, std::size_t index) {
+    if (index >= vm->registers().size()) {
+      panic("index " + std::to_string(index) + "out of bounds");
+    }
+  }
+};
+
+struct Memory {
+  Memory(std::size_t size) : _memory(size) {}
+
+  auto operator[](std::size_t index) -> VMType & { return _memory[index]; }
+
+private:
+  std::vector<VMType> _memory;
 };
 
 template <class POLICY> class VirtualMachine {
@@ -129,6 +161,31 @@ public:
     } while (_pc != old_pc);
   }
 
+  void step() {
+    std::size_t old_pc = 0;
+    do {
+      std::string cmd;
+      old_pc = _pc;
+      std::visit(
+          [&](auto &instruction) {
+            InstructionResult res = instruction.execute(this);
+            res.error([](const Error &err) {
+              std::cerr << "Instruction failed: " << err.msg() << "\n";
+              std::abort();
+            });
+          },
+          _program[_pc]);
+      std::cin >> cmd;
+      if (cmd == "r") {
+        print_registers();
+      }
+      if (cmd == "rs") {
+        print_registers();
+        print_stack();
+      }
+    } while (_pc != old_pc);
+  }
+
   template <class... ARG> auto init_registers(ARG &&...args) {
     std::vector<int> tmp = {std::forward<ARG>(args)...};
     std::copy_n(tmp.begin(), std::min(tmp.size(), _registers.size()),
@@ -170,6 +227,17 @@ public:
       _stack.push_back(value);
     }
   }
+
+private:
+  void print_registers() {
+    std::cout << "Registers:\n";
+    for (std::size_t i = 0; i < _registers.size(); ++i) {
+      std::cout << "  R[" << i << "]: ";
+      std::cout << to_string(_registers[i]).result_or("");
+      std::cout << "\n";
+    }
+  }
+  void print_stack() {}
 
 private:
   std::vector<InstructionTypeV> _program;

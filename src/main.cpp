@@ -26,7 +26,7 @@ ResultOr<bool> palladium_write(VM *vm, const std::vector<VMType> &args) {
 auto main(int argc, char **argv) -> int {
   UNUSED(argc);
   UNUSED(argv);
-  using VM = VirtualMachine<AggresivPolicy>;
+  using VM = VirtualMachine<DebugPolicy>;
 
   std::vector<VM::InstructionTypeV> program;
   program.push_back(Load<VM>(1));
@@ -61,7 +61,8 @@ auto main(int argc, char **argv) -> int {
   vm.add_function("add_nr", fcode2, 2);
 
   vm.init_registers(0, 10, 20);
-  vm.run();
+  // vm.run();
+  vm.step();
 
   std::cout << "\nRegister[0]:" << vm_type_get<int>(vm.reg_0()) << std::endl;
 

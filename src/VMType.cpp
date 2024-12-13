@@ -136,7 +136,7 @@ auto div(VMType &lhs, VMType &rhs) -> ResultOr<VMType> {
       lhs, rhs);
 }
 
-auto to_string(VMType &value) -> ResultOr<std::string> {
+auto to_string(const VMType &value) -> ResultOr<std::string> {
   if (std::holds_alternative<VMPrimitive>(value)) {
     return std::visit(
         [](const auto &v) -> ResultOr<std::string> {
@@ -224,4 +224,18 @@ auto operator==(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool {
     return vm_primitive_cmp(_lhs, _rhs, std::equal_to<>{});
   };
   return std::visit(visitor, lhs, rhs);
+}
+
+auto to_string(const VMStructTypes &type) -> ResultOr<std::string> {
+
+  return std::visit(
+      overloaded{
+          [&](const VMPrimitive &t) -> ResultOr<std::string> {
+            VMType tt = t;
+            return to_string(tt);
+          },
+          [&]([[maybe_unused]] const VMStructPtr &t) -> ResultOr<std::string> {
+            return ResultOr<std::string>("struct type ptr");
+          }},
+      type);
 }
