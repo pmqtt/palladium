@@ -2,6 +2,8 @@
 #define _PALLADIUM_VM_H
 #include "Instruction.h"
 #include "Util.h"
+#include "VMMemory.h"
+#include "VMPolicy.h"
 #include "VMType.h"
 #include <algorithm>
 #include <cstddef>
@@ -53,52 +55,6 @@ struct StackFrame {
   std::vector<VMType> registers;
 };
 
-struct AggresivPolicy {
-  static void check_stack_bounds([[maybe_unused]] int sp,
-                                 [[maybe_unused]] std::size_t max_size) {}
-  static void print_dbg([[maybe_unused]] const std::string &inst) {}
-  template <class VM>
-  static void check_register_bounds([[maybe_unused]] VM *vm,
-                                    [[maybe_unused]] std::size_t index) {}
-};
-
-struct DebugPolicy {
-  static void check_stack_bounds(int sp, std::size_t max_size) {
-    if (sp < -1) {
-      panic("Stack underflow");
-    }
-    if (std::cmp_greater_equal(sp, max_size)) {
-      panic("Stack overflow");
-    }
-  }
-  static void print_dbg(const std::string &inst) {
-    std::string msg;
-    for (auto &c : inst) {
-      if (std::isspace(c) && c != ' ') {
-        msg += "\\n";
-      } else {
-        msg += c;
-      }
-    }
-    std::cout << msg << std::endl;
-  }
-  template <class VM>
-  static void check_register_bounds(VM *vm, std::size_t index) {
-    if (index >= vm->registers().size()) {
-      panic("index " + std::to_string(index) + "out of bounds");
-    }
-  }
-};
-
-struct Memory {
-  Memory(std::size_t size) : _memory(size) {}
-
-  auto operator[](std::size_t index) -> VMType & { return _memory[index]; }
-
-private:
-  std::vector<VMType> _memory;
-};
-
 template <class POLICY> class VirtualMachine {
 public:
   using P = POLICY;
@@ -109,9 +65,10 @@ public:
       -> VirtualMachine<P> {
     return VirtualMachine<P>(program);
   }
-  VirtualMachine(const std::vector<InstructionTypeV> &program)
+  VirtualMachine(const std::vector<InstructionTypeV> &program,
+                 std::size_t mem_size = 1024 * 1024 * 1024)
       : _program(program), _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1),
-        _memory(1000) {}
+        _memory(mem_size) {}
 
   void add_function(const std::string fname,
                     const std::vector<InstructionTypeV> &code,
@@ -228,6 +185,14 @@ public:
     }
   }
 
+  auto allocate(std::size_t size) -> VMAddress {
+    return VMAddress{_memory.allocate(size)};
+  }
+
+  void deallocate(const VMAddress &adr) { _memory.deallocate(adr.get()); }
+
+  void print_memory() const { std::cout << _memory; }
+
 private:
   void print_registers() {
     std::cout << "Registers:\n";
@@ -248,7 +213,7 @@ private:
   std::vector<FunctionEntry> _function_section;
   std::vector<NativeFunctionEntry<VirtualMachine<POLICY>>> _native_section;
   std::vector<StackFrame> _call_stack;
-  std::vector<VMType> _memory;
+  VMMemory<VirtualMachine<POLICY>> _memory;
 };
 
 #endif

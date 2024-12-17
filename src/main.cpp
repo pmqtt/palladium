@@ -26,7 +26,7 @@ ResultOr<bool> palladium_write(VM *vm, const std::vector<VMType> &args) {
 auto main(int argc, char **argv) -> int {
   UNUSED(argc);
   UNUSED(argv);
-  using VM = VirtualMachine<DebugPolicy>;
+  using VM = VirtualMachine<AggresivPolicy>;
 
   std::vector<VM::InstructionTypeV> program;
   program.push_back(Load<VM>(1));
@@ -47,9 +47,13 @@ auto main(int argc, char **argv) -> int {
   program.push_back(Push<VM>("\nnativewrite\n")); // string to write
   program.push_back(Push<VM>(1));                 // fd stdout
   program.push_back(CallNative<VM>("write"));
+  program.push_back(Allocate<VM>(5));
+  program.push_back(Push<VM>("HALLO"));
+  program.push_back(WriteMem<VM>());
+  program.push_back(Deallocate<VM>());
   program.push_back(Halt<VM>());
 
-  VM vm(program);
+  VM vm(program, 128);
   vm.add_native_function("write", palladium_write<VM>, 2);
 
   std::vector<VM::InstructionTypeV> fcode1 = {
@@ -61,10 +65,9 @@ auto main(int argc, char **argv) -> int {
   vm.add_function("add_nr", fcode2, 2);
 
   vm.init_registers(0, 10, 20);
-  // vm.run();
-  vm.step();
-
-  std::cout << "\nRegister[0]:" << vm_type_get<int>(vm.reg_0()) << std::endl;
+  vm.run();
+  // vm.step();
+  vm.print_memory();
 
   return 0;
 }

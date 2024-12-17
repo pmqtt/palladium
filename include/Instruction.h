@@ -5,6 +5,7 @@
 #include "VMType.h"
 #include <cstddef>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -451,11 +452,57 @@ private:
   VMStructTypes _type;
 };
 
+template <class VM> struct Allocate : public Instruction<VM> {
+  Allocate(std::size_t size) : _size(size) {}
+
+  auto execute(VM *vm) -> InstructionResult override {
+    VM::P::print_dbg("Allocate " + std::to_string(_size));
+    VMAddress adr = vm->allocate(_size);
+    vm->registers()[9] = adr;
+    vm->inc_pc();
+    return true;
+  }
+
+private:
+  std::size_t _size;
+};
+
+template <class VM> struct Deallocate : public Instruction<VM> {
+  Deallocate() {}
+  auto execute(VM *vm) -> InstructionResult override {
+    VM::P::print_dbg("Deallocate ");
+    const VMType &adrT = vm->registers()[9];
+    const VMAddress &adr = std::get<VMAddress>(adrT);
+    vm->deallocate(adr);
+    vm->inc_pc();
+    return true;
+  }
+};
+
+template <class VM> struct WriteMem : public Instruction<VM> {
+  WriteMem() {}
+  auto execute(VM *vm) -> InstructionResult override {
+    VM::P::print_dbg("WriteMem");
+    auto valueT = vm->stack_top(); // std::get<VMPrimitive>(vm->stack_top());
+    auto value_and_size =
+        get_data_ptr_and_size(valueT); // std::get<std::string>(valueP);
+    vm->stack_pop();
+    char *ptr = reinterpret_cast<char *>(
+        (std::get<VMAddress>(vm->registers()[9])).get());
+    for (std::size_t i = 0; std::cmp_less(i, value_and_size.second); ++i) {
+      *(ptr + i) = reinterpret_cast<const char *>(value_and_size.first)[i];
+    }
+    vm->inc_pc();
+    return true;
+  }
+};
+
 template <class VM>
 using InstructionType =
     std::variant<Load<VM>, CLoad<VM>, INDLoad<VM>, SLoad<VM>, Store<VM>,
                  INDStore<VM>, Add<VM>, CAdd<VM>, INDAdd<VM>, If<VM>, Goto<VM>,
                  Halt<VM>, Push<VM>, Pop<VM>, Print<VM>,
                  PrintRegStructField<VM>, Call<VM>, CallNative<VM>, RetVoid<VM>,
-                 Return<VM>, StructCreate<VM>, AddField<VM>, SetField<VM>>;
+                 Return<VM>, StructCreate<VM>, AddField<VM>, SetField<VM>,
+                 Allocate<VM>, Deallocate<VM>, WriteMem<VM>>;
 #endif

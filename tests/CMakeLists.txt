@@ -9,4 +9,4 @@ endfunction()
 
 CREATE_PALLADIUM_TEST(LexerTest)
 CREATE_PALLADIUM_TEST(TokenKindTest)
-
+CREATE_PALLADIUM_TEST(VMMemoryTest)

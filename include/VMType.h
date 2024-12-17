@@ -64,6 +64,9 @@ auto operator==(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
 
 auto to_string(const VMStructTypes &type) -> ResultOr<std::string>;
 
+auto get_data_ptr_and_size(const VMType &type)
+    -> std::pair<const void *, std::size_t>;
+
 template <class T>
 auto vm_primitive_holds_alternative(const VMPrimitive &type) -> bool {
   return std::visit(
