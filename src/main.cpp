@@ -47,11 +47,12 @@ auto main(int argc, char **argv) -> int {
   program.push_back(Push<VM>("\nnativewrite\n")); // string to write
   program.push_back(Push<VM>(1));                 // fd stdout
   program.push_back(CallNative<VM>("write"));
-  program.push_back(Allocate<VM>(5));
-  program.push_back(Push<VM>("HALLO"));
+
+  program.push_back(Allocate<VM>(static_cast<int>(sizeof(int))));
+  program.push_back(Push<VM>(32));
   program.push_back(WriteMem<VM>());
-  program.push_back(Push<VM>(5)); // type
-  program.push_back(Push<VM>(5)); // bytes
+  program.push_back(Push<VM>(static_cast<int>(VMTypeKind::VM_INT))); // type
+  program.push_back(Push<VM>(static_cast<int>(sizeof(int))));        // bytes
   program.push_back(ReadMem<VM>());
   program.push_back(Print<VM>());
   program.push_back(Deallocate<VM>());
