@@ -41,6 +41,7 @@ struct VMStruct {
   void add_field(const VMStructTypes &type);
   void set_field(std::size_t index, const VMStructTypes &value);
   auto get_field(std::size_t index) -> VMStructTypes &;
+  auto size() const -> int;
 
 private:
   std::vector<VMStructTypes> _fields;
@@ -77,6 +78,8 @@ auto operator==(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
 auto to_string(const VMStructTypes &type) -> ResultOr<std::string>;
 
 auto get_data_ptr_and_size(const VMType &type)
+    -> std::pair<const void *, std::size_t>;
+auto get_data_ptr_and_size(const VMStructTypes &type)
     -> std::pair<const void *, std::size_t>;
 
 template <class T>

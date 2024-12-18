@@ -27,7 +27,6 @@ auto main(int argc, char **argv) -> int {
   UNUSED(argc);
   UNUSED(argv);
   using VM = VirtualMachine<AggresivPolicy>;
-
   std::vector<VM::InstructionTypeV> program;
   program.push_back(Load<VM>(1));
   program.push_back(Add<VM>(2));

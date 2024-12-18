@@ -17,7 +17,7 @@ void VMStruct::set_field(std::size_t index, const VMStructTypes &value) {
       _fields[index] = v;
 
     } else {
-      // TODO Error handling
+      // TODO: Error handling
     }
   };
   auto psp = [](const VMPrimitive &v, const VMStructPtr &field) {
@@ -37,4 +37,13 @@ void VMStruct::set_field(std::size_t index, const VMStructTypes &value) {
 }
 auto VMStruct::get_field(std::size_t index) -> VMStructTypes & {
   return _fields[index];
+}
+
+auto VMStruct::size() const -> int {
+  int res = 0;
+  for (const auto &x : _fields) {
+    auto ptr_size = get_data_ptr_and_size(x);
+    res += static_cast<int>(ptr_size.second);
+  }
+  return res;
 }

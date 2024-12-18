@@ -37,7 +37,11 @@ RetVoid	keine	Kehrt von Funktion zurück	0x0120
 Return	Register Nummber	Kehrt von Funktion zurück| stack.push(register)	0x0120
 StructCreate	Register Nummber, Anzahl Felder	c(i) = Struct	0x0130
 AddField	Register Nummber von einem VMStruct, VMStructType	c(i) = Struct.AddField	0x0131
-SetField	Register Nummber von einem VMStruct, Adresse des Feldes, VMStructType	c(i).Field(adresse) =VMStructType 	0x0131
+SetField	Register Nummber von einem VMStruct, Adresse des Feldes, VMStructType	c(i).Field(adresse) =VMStructType 	0x0132
+Allocate	Konstante in Bytes	c(9)=adresse	0x0140
+Deallocate	keine 	free(c(9))	0x0141
+WriteMem	Push(VMType)	 mem[c(9)+0]...mem[c(9)+sizeof(VMType)]= VMType 	0x0142
+ReadMem	 Push(size) Push(type)	VMType as type =  mem[c(9)+0]...mem[c(9)+size] 	0x0142
 .TE
 .fi
 

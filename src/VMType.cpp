@@ -258,7 +258,28 @@ auto get_data_ptr_and_size(const VMType &type)
   } else if (auto adr = std::get_if<VMAddress>(&type)) {
     return {adr, sizeof(VMAddress)};
   } else if (auto vmStruct = std::get_if<VMStruct>(&type)) {
-    return {vmStruct, sizeof(*vmStruct)};
+    return {vmStruct, vmStruct->size()};
+  }
+  return {nullptr, 0};
+}
+
+auto get_data_ptr_and_size(const VMStructTypes &type)
+    -> std::pair<const void *, std::size_t> {
+  if (auto prim = std::get_if<VMPrimitive>(&type)) {
+    return std::visit(
+        overloaded{
+            [](const std::string &str) -> std::pair<const void *, std::size_t> {
+              return {str.data(), str.size()};
+            },
+            [](const VMAddress &adr) -> std::pair<const void *, std::size_t> {
+              return {&adr, sizeof(VMAddress)};
+            },
+            [](const auto &val) -> std::pair<const void *, std::size_t> {
+              return {&val, sizeof(val)};
+            }},
+        *prim);
+  } else if (auto adr = std::get_if<VMStructPtr>(&type)) {
+    return {adr, sizeof(VMAddress)};
   }
   return {nullptr, 0};
 }
