@@ -50,6 +50,10 @@ auto main(int argc, char **argv) -> int {
   program.push_back(Allocate<VM>(5));
   program.push_back(Push<VM>("HALLO"));
   program.push_back(WriteMem<VM>());
+  program.push_back(Push<VM>(5)); // type
+  program.push_back(Push<VM>(5)); // bytes
+  program.push_back(ReadMem<VM>());
+  program.push_back(Print<VM>());
   program.push_back(Deallocate<VM>());
   program.push_back(Halt<VM>());
 
@@ -67,6 +71,8 @@ auto main(int argc, char **argv) -> int {
   vm.init_registers(0, 10, 20);
   vm.run();
   // vm.step();
+
+  std::cout << std::endl;
   vm.print_memory();
 
   return 0;

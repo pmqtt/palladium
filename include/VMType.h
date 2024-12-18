@@ -49,6 +49,18 @@ private:
 
 using VMType = std::variant<VMPrimitive, VMStruct, VMAddress>;
 
+enum class VMTypeKind {
+  VM_INT = 0,
+  VM_FLOAT = 1,
+  VM_SIZE_T = 2,
+  VM_DOUBLE = 3,
+  VM_BOOL = 4,
+  VM_STRING = 5,
+  VM_STRUCT = 6,
+  VM_STRUCT_PTR = 7,
+  VM_ADDRESS = 8,
+};
+
 auto add(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;
 auto sub(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;
 auto mult(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;

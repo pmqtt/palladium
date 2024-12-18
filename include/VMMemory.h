@@ -94,9 +94,6 @@ template <class VM, std::size_t SSIZE = 128> struct VMMemory {
     assert(found_adr && "Illigal memory access, adress not found");
 
     auto item = free_list[index];
-    std::cout << "index:" << index << " adr:" << adr << " free_list[index]:={ "
-              << free_list[index].first << ", " << free_list[index].second
-              << " }" << std::endl;
     VM::P::check_equal_adress(adr, item.first);
     std::size_t total = 0;
     std::size_t tmp_index = index;

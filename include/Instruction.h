@@ -3,6 +3,7 @@
 
 #include "Util.h"
 #include "VMType.h"
+#include <cassert>
 #include <cstddef>
 #include <string>
 #include <utility>
@@ -483,9 +484,8 @@ template <class VM> struct WriteMem : public Instruction<VM> {
   WriteMem() {}
   auto execute(VM *vm) -> InstructionResult override {
     VM::P::print_dbg("WriteMem");
-    auto valueT = vm->stack_top(); // std::get<VMPrimitive>(vm->stack_top());
-    auto value_and_size =
-        get_data_ptr_and_size(valueT); // std::get<std::string>(valueP);
+    auto valueT = vm->stack_top();
+    auto value_and_size = get_data_ptr_and_size(valueT);
     vm->stack_pop();
     char *ptr = reinterpret_cast<char *>(
         (std::get<VMAddress>(vm->registers()[9])).get());
@@ -497,6 +497,66 @@ template <class VM> struct WriteMem : public Instruction<VM> {
   }
 };
 
+template <class T> auto convert_to_primary(char *ptr, int sz) -> VMType {
+  T res;
+  char *p = reinterpret_cast<char *>(&res);
+  for (std::size_t i = 0; std::cmp_less(i, sz); ++i) {
+    *(p + i) = *(ptr + i);
+  }
+  return res;
+}
+
+template <class VM> struct ReadMem : public Instruction<VM> {
+  ReadMem() {}
+  auto execute(VM *vm) -> InstructionResult override {
+    VM::P::print_dbg("ReadMem");
+    char *ptr = reinterpret_cast<char *>(
+        (std::get<VMAddress>(vm->registers()[9])).get());
+    auto sizeT = vm->stack_top();
+    auto size = std::get<int>(std::get<VMPrimitive>(sizeT));
+    vm->stack_pop();
+    auto typeT = vm->stack_top();
+    auto type = std::get<int>(std::get<VMPrimitive>(typeT));
+    vm->stack_pop();
+    VMType result;
+    switch (static_cast<VMTypeKind>(type)) {
+    case VMTypeKind::VM_INT:
+      result = convert_to_primary<int>(ptr, size);
+      break;
+    case VMTypeKind::VM_FLOAT:
+      result = convert_to_primary<float>(ptr, size);
+      break;
+    case VMTypeKind::VM_SIZE_T:
+      result = convert_to_primary<std::size_t>(ptr, size);
+      break;
+    case VMTypeKind::VM_DOUBLE:
+      result = convert_to_primary<double>(ptr, size);
+      break;
+    case VMTypeKind::VM_BOOL:
+      result = convert_to_primary<bool>(ptr, size);
+      break;
+    case VMTypeKind::VM_STRING: {
+      std::string res;
+      for (std::size_t i = 0; std::cmp_less(i, size); ++i) {
+        res += *(ptr + i);
+      }
+      result = res;
+    } break;
+
+    case VMTypeKind::VM_STRUCT:
+    case VMTypeKind::VM_STRUCT_PTR:
+    case VMTypeKind::VM_ADDRESS:
+    default:
+      assert(false && "vm type not handles");
+    }
+    vm->stack_push(result);
+    vm->inc_pc();
+    return true;
+  }
+
+private:
+};
+
 template <class VM>
 using InstructionType =
     std::variant<Load<VM>, CLoad<VM>, INDLoad<VM>, SLoad<VM>, Store<VM>,
@@ -504,5 +564,5 @@ using InstructionType =
                  Halt<VM>, Push<VM>, Pop<VM>, Print<VM>,
                  PrintRegStructField<VM>, Call<VM>, CallNative<VM>, RetVoid<VM>,
                  Return<VM>, StructCreate<VM>, AddField<VM>, SetField<VM>,
-                 Allocate<VM>, Deallocate<VM>, WriteMem<VM>>;
+                 Allocate<VM>, Deallocate<VM>, WriteMem<VM>, ReadMem<VM>>;
 #endif
