@@ -12,7 +12,6 @@ This document describes the instructions understood by the VM, including their s
 
 ## COMMAND TABLE
 
-```
 | Command            | Arguments                      | Description                                | Byte  |
 |--------------------|--------------------------------|--------------------------------------------|-------|
 | Load              | Register Number               | c(0) = c(i)                               | 0x0010|
@@ -42,6 +41,7 @@ This document describes the instructions understood by the VM, including their s
 | Deallocate        | None                          | free(c(9))                                | 0x0141|
 | WriteMem          | Push(VMType)                  | mem[c(9)+0]...mem[c(9)+sizeof(VMType)]    | 0x0142|
 | ReadMem           | Push(size), Push(type)        | VMType as type = mem[c(9)+0]...mem[size]  | 0x0142|
+
 ```
 
 ## INSTRUCTIONS
