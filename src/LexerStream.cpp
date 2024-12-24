@@ -1,8 +1,8 @@
 #include "LexerStream.h"
 #include <optional>
 
-LexerFileStream::LexerFileStream(const std::string &filename)
-    : _file(filename) {}
+LexerFileStream::LexerFileStream(const std::string& filename) : _file(filename) {
+}
 
 auto LexerFileStream::next() -> std::optional<char> {
   if (_file.is_open()) {
@@ -14,10 +14,12 @@ auto LexerFileStream::next() -> std::optional<char> {
   return std::nullopt;
 }
 
-void LexerFileStream::prev() { _file.unget(); }
+void LexerFileStream::prev() {
+  _file.unget();
+}
 
-LexerStringStream::LexerStringStream(std::string stream)
-    : _pos(0), _buffer(stream) {}
+LexerStringStream::LexerStringStream(std::string stream) : _pos(0), _buffer(stream) {
+}
 
 auto LexerStringStream::next() -> std::optional<char> {
   if (_pos >= _buffer.size()) {

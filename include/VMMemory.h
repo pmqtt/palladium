@@ -38,7 +38,7 @@ struct VMMemorySegment {
   static constexpr std::size_t SIXTEEN_BYTE_BLOCK_START = 44;
   static constexpr std::size_t SIXTEEN_BYTE_BLOCK_END = 45;
 
-  char *start_adr;
+  char* start_adr;
   std::bitset<46> sub_blocks_free_list;
   std::array<std::pair<std::size_t, std::size_t>, 46> free_list;
 };
@@ -48,16 +48,13 @@ template <class VM, std::size_t SSIZE = 128> struct VMMemory {
 
   VMMemory(std::size_t capacity) : _capacity(capacity) {
     _segment_count = _capacity / SEGMENT_SIZE;
-    _base = static_cast<char *>(mmap(nullptr, _segment_count * SEGMENT_SIZE,
-                                     PROT_READ | PROT_WRITE,
-                                     MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+    _base = static_cast<char*>(
+        mmap(nullptr, _segment_count * SEGMENT_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
 
     assert(_base != MAP_FAILED && "Allocation memory failed");
 
     for (std::size_t i = 0; i < _segment_count; ++i) {
-      _segment_list.push_back({.start_adr = _base + (i * _segment_count),
-                               .sub_blocks_free_list = {},
-                               .free_list = {}});
+      _segment_list.push_back({.start_adr = _base + (i * _segment_count), .sub_blocks_free_list = {}, .free_list = {}});
     }
   }
 
@@ -76,9 +73,8 @@ template <class VM, std::size_t SSIZE = 128> struct VMMemory {
     std::size_t base_adr = reinterpret_cast<std::size_t>(_base);
     VM::P::check_memory_adress(base_adr, adr);
     std::size_t segmentnr = (adr - base_adr) / SSIZE;
-    auto &free_list = _segment_list[segmentnr].free_list;
-    std::size_t sadr =
-        reinterpret_cast<std::size_t>(_segment_list[segmentnr].start_adr);
+    auto& free_list = _segment_list[segmentnr].free_list;
+    std::size_t sadr = reinterpret_cast<std::size_t>(_segment_list[segmentnr].start_adr);
 
     std::size_t index = (adr - sadr);
     auto limits = find_sub_block_by_index(index);
@@ -113,40 +109,39 @@ template <class VM, std::size_t SSIZE = 128> struct VMMemory {
     free_list[tmp_index] = {};
   }
 
-  ~VMMemory() { munmap(_base, _capacity); }
-  auto base() -> std::size_t { return reinterpret_cast<std::size_t>(_base); };
-  auto segments() const -> const std::vector<VMMemorySegment> & {
+  ~VMMemory() {
+    munmap(_base, _capacity);
+  }
+  auto base() -> std::size_t {
+    return reinterpret_cast<std::size_t>(_base);
+  };
+  auto segments() const -> const std::vector<VMMemorySegment>& {
     return _segment_list;
   }
 
 private:
   auto allocate_small_sub_block(std::size_t size) -> std::size_t {
     if (size == 1) {
-      return allocate_sub_block(VMMemorySegment::ONE_BYTE_BLOCK_START,
-                                VMMemorySegment::ONE_BYTE_BLOCK_END, 1);
+      return allocate_sub_block(VMMemorySegment::ONE_BYTE_BLOCK_START, VMMemorySegment::ONE_BYTE_BLOCK_END, 1);
     }
     if (size <= 4) {
-      return allocate_sub_block(VMMemorySegment::FOUR_BYTE_BLOCK_START,
-                                VMMemorySegment::FOUR_BYTE_BLOCK_END, 4);
+      return allocate_sub_block(VMMemorySegment::FOUR_BYTE_BLOCK_START, VMMemorySegment::FOUR_BYTE_BLOCK_END, 4);
     }
     if (size <= 8) {
-      return allocate_sub_block(VMMemorySegment::EIGHT_BYTE_BLOCK_START,
-                                VMMemorySegment::EIGHT_BYTE_BLOCK_END, 8);
+      return allocate_sub_block(VMMemorySegment::EIGHT_BYTE_BLOCK_START, VMMemorySegment::EIGHT_BYTE_BLOCK_END, 8);
     }
     if (size <= 16) {
-      return allocate_sub_block(VMMemorySegment::SIXTEEN_BYTE_BLOCK_START,
-                                VMMemorySegment::SIXTEEN_BYTE_BLOCK_END, 16);
+      return allocate_sub_block(VMMemorySegment::SIXTEEN_BYTE_BLOCK_START, VMMemorySegment::SIXTEEN_BYTE_BLOCK_END, 16);
     }
     return 0;
   }
 
   auto allocate_sub_blocks(std::size_t size) -> std::size_t {
-    for (auto &x : _segment_list) {
+    for (auto& x : _segment_list) {
       std::int8_t index = find_free_start_index_in_segment(x, size);
       if (index >= 0) {
         std::uint8_t total = 0;
-        std::size_t adr = reinterpret_cast<std::size_t>(
-            x.start_adr + start_adr_of_sub_block(index));
+        std::size_t adr = reinterpret_cast<std::size_t>(x.start_adr + start_adr_of_sub_block(index));
         x.free_list[index] = std::make_tuple(adr, size);
 
         while (total < size) {
@@ -164,8 +159,7 @@ private:
   auto allocate_segments_and_blocks(std::size_t size) -> std::size_t {
     std::size_t amount_segments = size / SSIZE;
     std::size_t rest_size = size % SSIZE;
-    for (auto iter = _segment_list.begin(); iter != _segment_list.end();
-         ++iter) {
+    for (auto iter = _segment_list.begin(); iter != _segment_list.end(); ++iter) {
       if (iter->sub_blocks_free_list.none()) {
         std::size_t adr = reinterpret_cast<std::size_t>(iter->start_adr);
         bool empty_segments = true;
@@ -211,17 +205,15 @@ private:
     return 0;
   }
 
-  auto allocate_sub_block(std::size_t start, std::size_t end, u_int8_t step)
-      -> std::size_t {
-    for (auto &segment : _segment_list) {
+  auto allocate_sub_block(std::size_t start, std::size_t end, u_int8_t step) -> std::size_t {
+    for (auto& segment : _segment_list) {
       for (std::size_t i = start; i <= end; ++i) {
         if (segment.sub_blocks_free_list[i] == false) {
           segment.sub_blocks_free_list[i] = true;
           std::uint8_t offset = start_adr_of_sub_block(start);
           offset += step * (i - start);
-          char *adr = segment.start_adr + offset;
-          segment.free_list[i] =
-              std::make_tuple(reinterpret_cast<size_t>(adr), step);
+          char* adr = segment.start_adr + offset;
+          segment.free_list[i] = std::make_tuple(reinterpret_cast<size_t>(adr), step);
           return reinterpret_cast<std::size_t>(adr);
         }
       }
@@ -229,8 +221,7 @@ private:
     return 0;
   }
 
-  auto start_adr_of_sub_block(std::uint8_t sub_block_index) const
-      -> std::uint8_t {
+  auto start_adr_of_sub_block(std::uint8_t sub_block_index) const -> std::uint8_t {
     if (sub_block_index <= VMMemorySegment::ONE_BYTE_BLOCK_END)
       return 0;
     if (sub_block_index <= VMMemorySegment::FOUR_BYTE_BLOCK_END)
@@ -242,19 +233,14 @@ private:
     assert(false && "failed calculation of start adress in sub block");
   }
 
-  auto find_sub_block_by_index(std::uint8_t index) const
-      -> std::pair<std::size_t, std::size_t> {
+  auto find_sub_block_by_index(std::uint8_t index) const -> std::pair<std::size_t, std::size_t> {
     if (index < 32)
-      return {VMMemorySegment::ONE_BYTE_BLOCK_START,
-              VMMemorySegment::ONE_BYTE_BLOCK_END};
+      return {VMMemorySegment::ONE_BYTE_BLOCK_START, VMMemorySegment::ONE_BYTE_BLOCK_END};
     if (index < 64)
-      return {VMMemorySegment::FOUR_BYTE_BLOCK_START,
-              VMMemorySegment::FOUR_BYTE_BLOCK_END};
+      return {VMMemorySegment::FOUR_BYTE_BLOCK_START, VMMemorySegment::FOUR_BYTE_BLOCK_END};
     if (index < 96)
-      return {VMMemorySegment::EIGHT_BYTE_BLOCK_START,
-              VMMemorySegment::EIGHT_BYTE_BLOCK_END};
-    return {VMMemorySegment::SIXTEEN_BYTE_BLOCK_START,
-            VMMemorySegment::SIXTEEN_BYTE_BLOCK_END};
+      return {VMMemorySegment::EIGHT_BYTE_BLOCK_START, VMMemorySegment::EIGHT_BYTE_BLOCK_END};
+    return {VMMemorySegment::SIXTEEN_BYTE_BLOCK_START, VMMemorySegment::SIXTEEN_BYTE_BLOCK_END};
   }
 
   auto sizeof_sub_block(std::uint8_t index) const -> std::uint8_t {
@@ -269,15 +255,13 @@ private:
     assert(false && "failed calculation of size in sub block");
   }
 
-  std::int8_t find_free_start_index_in_segment(const VMMemorySegment &segment,
-                                               std::size_t sz) const {
+  std::int8_t find_free_start_index_in_segment(const VMMemorySegment& segment, std::size_t sz) const {
     if (segment.sub_blocks_free_list.none()) {
       return 0;
     }
     std::size_t total = 0;
     std::int8_t adr = 0;
-    for (std::uint8_t i = 0; i <= VMMemorySegment::SIXTEEN_BYTE_BLOCK_END;
-         ++i) {
+    for (std::uint8_t i = 0; i <= VMMemorySegment::SIXTEEN_BYTE_BLOCK_END; ++i) {
       if (segment.sub_blocks_free_list[i] == false) {
         total += sizeof_sub_block(i);
       }
@@ -291,7 +275,7 @@ private:
     }
     return -1;
   }
-  auto is_left_free(const VMMemorySegment &segment, std::uint8_t sz) -> bool {
+  auto is_left_free(const VMMemorySegment& segment, std::uint8_t sz) -> bool {
     if (segment.sub_blocks_free_list.none()) {
       return true;
     }
@@ -308,7 +292,7 @@ private:
     return true;
   }
 
-  void mark_partial(VMMemorySegment &segment, std::uint8_t sz) {
+  void mark_partial(VMMemorySegment& segment, std::uint8_t sz) {
     u_int8_t total = 0;
     uint8_t index = 0;
     while (total < sz && index <= VMMemorySegment::SIXTEEN_BYTE_BLOCK_END) {
@@ -318,27 +302,25 @@ private:
     }
   }
 
-  void mark_segment(VMMemorySegment &segment) {
+  void mark_segment(VMMemorySegment& segment) {
     segment.sub_blocks_free_list.set();
   }
 
 private:
   std::size_t _capacity;
-  char *_base;
+  char* _base;
   std::size_t _segment_count;
   std::vector<VMMemorySegment> _segment_list;
 };
 
-template <class VM, std::size_t SSIZE>
-std::ostream &operator<<(std::ostream &os, const VMMemory<VM, SSIZE> &memory) {
+template <class VM, std::size_t SSIZE> std::ostream& operator<<(std::ostream& os, const VMMemory<VM, SSIZE>& memory) {
   os << "VMMemory State:" << std::endl;
   os << "----------------------------------------" << std::endl;
 
   std::size_t segment_index = 0;
-  for (const auto &segment : memory.segments()) {
+  for (const auto& segment : memory.segments()) {
     os << "Segment " << segment_index++ << " [Start Address: 0x" << std::hex
-       << reinterpret_cast<std::size_t>(segment.start_adr) << "]" << std::dec
-       << std::endl;
+       << reinterpret_cast<std::size_t>(segment.start_adr) << "]" << std::dec << std::endl;
 
     os << "  Blocks: ";
     for (std::size_t i = 0; i <= VMMemorySegment::SIXTEEN_BYTE_BLOCK_END; ++i) {
@@ -347,8 +329,7 @@ std::ostream &operator<<(std::ostream &os, const VMMemory<VM, SSIZE> &memory) {
       } else {
         os << "[ ]"; // Freier Block
       }
-      if (i == VMMemorySegment::ONE_BYTE_BLOCK_END ||
-          i == VMMemorySegment::FOUR_BYTE_BLOCK_END ||
+      if (i == VMMemorySegment::ONE_BYTE_BLOCK_END || i == VMMemorySegment::FOUR_BYTE_BLOCK_END ||
           i == VMMemorySegment::EIGHT_BYTE_BLOCK_END) {
         os << " | "; // Trenne die Blocktypen für Übersicht
       }

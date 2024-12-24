@@ -14,7 +14,7 @@ public:
 
 class LexerFileStream : public LexerStream {
 public:
-  LexerFileStream(const std::string &filename);
+  LexerFileStream(const std::string& filename);
   auto next() -> std::optional<char> override;
   void prev() override;
 

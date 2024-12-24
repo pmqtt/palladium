@@ -14,18 +14,23 @@ template <class... Ts> struct overloaded : Ts... {
 template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 struct VMAddress {
-  explicit constexpr VMAddress() : _valid(false) {}
-  explicit constexpr VMAddress(std::size_t adr) : _adr(adr), _valid(true) {}
-  constexpr auto get() const -> std::size_t { return _adr; }
-  constexpr auto is_valid() const -> bool { return _valid; }
+  explicit constexpr VMAddress() : _valid(false) {
+  }
+  explicit constexpr VMAddress(std::size_t adr) : _adr(adr), _valid(true) {
+  }
+  constexpr auto get() const -> std::size_t {
+    return _adr;
+  }
+  constexpr auto is_valid() const -> bool {
+    return _valid;
+  }
 
 private:
   std::size_t _adr;
   bool _valid;
 };
 
-using VMPrimitive =
-    std::variant<int, float, std::size_t, double, bool, std::string, VMAddress>;
+using VMPrimitive = std::variant<int, float, std::size_t, double, bool, std::string, VMAddress>;
 
 struct VMStruct;
 using VMStructPtr = std::shared_ptr<VMStruct>;
@@ -38,9 +43,9 @@ template <class T, class VARIANT> struct get_index {
 struct VMStruct {
   VMStruct(VMPrimitive size);
   auto max_index() const -> std::size_t;
-  void add_field(const VMStructTypes &type);
-  void set_field(std::size_t index, const VMStructTypes &value);
-  auto get_field(std::size_t index) -> VMStructTypes &;
+  void add_field(const VMStructTypes& type);
+  void set_field(std::size_t index, const VMStructTypes& value);
+  auto get_field(std::size_t index) -> VMStructTypes&;
   auto size() const -> int;
 
 private:
@@ -62,30 +67,27 @@ enum class VMTypeKind {
   VM_ADDRESS = 8,
 };
 
-auto add(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;
-auto sub(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;
-auto mult(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;
-auto div(VMType &lhs, VMType &rhs) -> ResultOr<VMType>;
-auto to_string(const VMType &value) -> ResultOr<std::string>;
+auto add(VMType& lhs, VMType& rhs) -> ResultOr<VMType>;
+auto sub(VMType& lhs, VMType& rhs) -> ResultOr<VMType>;
+auto mult(VMType& lhs, VMType& rhs) -> ResultOr<VMType>;
+auto div(VMType& lhs, VMType& rhs) -> ResultOr<VMType>;
+auto to_string(const VMType& value) -> ResultOr<std::string>;
 
-auto operator<(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
-auto operator>(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
-auto operator<=(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
-auto operator>=(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
-auto operator!=(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
-auto operator==(const VMPrimitive &lhs, const VMPrimitive &rhs) -> bool;
+auto operator<(const VMPrimitive& lhs, const VMPrimitive& rhs) -> bool;
+auto operator>(const VMPrimitive& lhs, const VMPrimitive& rhs) -> bool;
+auto operator<=(const VMPrimitive& lhs, const VMPrimitive& rhs) -> bool;
+auto operator>=(const VMPrimitive& lhs, const VMPrimitive& rhs) -> bool;
+auto operator!=(const VMPrimitive& lhs, const VMPrimitive& rhs) -> bool;
+auto operator==(const VMPrimitive& lhs, const VMPrimitive& rhs) -> bool;
 
-auto to_string(const VMStructTypes &type) -> ResultOr<std::string>;
+auto to_string(const VMStructTypes& type) -> ResultOr<std::string>;
 
-auto get_data_ptr_and_size(const VMType &type)
-    -> std::pair<const void *, std::size_t>;
-auto get_data_ptr_and_size(const VMStructTypes &type)
-    -> std::pair<const void *, std::size_t>;
+auto get_data_ptr_and_size(const VMType& type) -> std::pair<const void*, std::size_t>;
+auto get_data_ptr_and_size(const VMStructTypes& type) -> std::pair<const void*, std::size_t>;
 
-template <class T>
-auto vm_primitive_holds_alternative(const VMPrimitive &type) -> bool {
+template <class T> auto vm_primitive_holds_alternative(const VMPrimitive& type) -> bool {
   return std::visit(
-      [](const auto &lhs) -> bool {
+      [](const auto& lhs) -> bool {
         using L = std::remove_cvref_t<decltype(lhs)>;
         if constexpr (std::is_same_v<L, T>) {
           return true;
@@ -95,9 +97,9 @@ auto vm_primitive_holds_alternative(const VMPrimitive &type) -> bool {
       type);
 }
 
-template <class T> auto is_vm_type(const VMType &type) -> bool {
+template <class T> auto is_vm_type(const VMType& type) -> bool {
   return std::visit(
-      [](const auto &lhs) -> bool {
+      [](const auto& lhs) -> bool {
         using L = std::remove_cvref_t<decltype(lhs)>;
         if constexpr (std::is_same_v<L, VMPrimitive>) {
           return vm_primitive_holds_alternative<T>(lhs);
@@ -109,14 +111,14 @@ template <class T> auto is_vm_type(const VMType &type) -> bool {
       type);
 }
 
-template <class T> auto vm_type_get(const VMType &type) -> ResultOr<T> {
+template <class T> auto vm_type_get(const VMType& type) -> ResultOr<T> {
   return std::visit(
-      [](const auto &value) -> ResultOr<T> {
+      [](const auto& value) -> ResultOr<T> {
         using ValueType = std::remove_cvref_t<decltype(value)>;
 
         if constexpr (std::is_same_v<ValueType, VMPrimitive>) {
           return std::visit(
-              [](const auto &inner_value) -> ResultOr<T> {
+              [](const auto& inner_value) -> ResultOr<T> {
                 using InnerType = std::remove_cvref_t<decltype(inner_value)>;
                 if constexpr (std::is_same_v<InnerType, T>) {
                   return inner_value;
@@ -132,8 +134,7 @@ template <class T> auto vm_type_get(const VMType &type) -> ResultOr<T> {
       type);
 }
 
-template <class T>
-constexpr auto get_primitive_t(const VMType &type) -> ResultOr<T> {
+template <class T> constexpr auto get_primitive_t(const VMType& type) -> ResultOr<T> {
   if (std::holds_alternative<VMPrimitive>(type)) {
     if (std::holds_alternative<T>(std::get<VMPrimitive>(type))) {
       return std::get<T>(std::get<VMPrimitive>(type));

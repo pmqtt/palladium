@@ -5,29 +5,27 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
-#define RETURN_IF_VALID(F)                                                     \
-  do {                                                                         \
-    auto res = F;                                                              \
-    if (res) {                                                                 \
-      auto tokenRes = *res;                                                    \
-      return tokenRes.map([&](const Token &tok) {                              \
-        return Token(tok.kind(), tok.value(), _line, _pos);                    \
-      });                                                                      \
-    };                                                                         \
+#define RETURN_IF_VALID(F)                                                                                             \
+  do {                                                                                                                 \
+    auto res = F;                                                                                                      \
+    if (res) {                                                                                                         \
+      auto tokenRes = *res;                                                                                            \
+      return tokenRes.map([&](const Token& tok) { return Token(tok.kind(), tok.value(), _line, _pos); });              \
+    };                                                                                                                 \
   } while (0);
 
-#define ERROR_IF_CHAR(X, F, TEXT)                                              \
-  do {                                                                         \
-    if (X && F(*X)) {                                                          \
-      return err(TEXT);                                                        \
-    }                                                                          \
+#define ERROR_IF_CHAR(X, F, TEXT)                                                                                      \
+  do {                                                                                                                 \
+    if (X && F(*X)) {                                                                                                  \
+      return err(TEXT);                                                                                                \
+    }                                                                                                                  \
   } while (0);
 
-#define ERROR_IF_CHAR_EQ(X, EXP, TEXT)                                         \
-  do {                                                                         \
-    if (X && *X == EXP) {                                                      \
-      return err(TEXT);                                                        \
-    }                                                                          \
+#define ERROR_IF_CHAR_EQ(X, EXP, TEXT)                                                                                 \
+  do {                                                                                                                 \
+    if (X && *X == EXP) {                                                                                              \
+      return err(TEXT);                                                                                                \
+    }                                                                                                                  \
   } while (0);
 
 namespace detail {
@@ -36,7 +34,7 @@ auto is_digit = [](char x) { return std::isdigit(x); };
 auto is_xdigit = [](char x) { return std::isxdigit(x); };
 
 auto to_string(TokenKind tk) -> std::string {
-  static const char *converter[] = {"IDENTIFIER",
+  static const char* converter[] = {"IDENTIFIER",
                                     "TEXT",
                                     "INTEGER",
                                     "DOUBLE",
@@ -70,8 +68,7 @@ auto to_string(TokenKind tk) -> std::string {
                                     "WHILE",
                                     "END_OF_FILE"};
 
-  std::cout << "INT TK: " << static_cast<std::size_t>(tk) << " : "
-            << std::size(converter) << std::endl;
+  std::cout << "INT TK: " << static_cast<std::size_t>(tk) << " : " << std::size(converter) << std::endl;
   if (static_cast<std::size_t>(tk) < std::size(converter)) {
     std::cout << "A" << std::endl;
     return converter[static_cast<std::size_t>(tk)];
@@ -81,45 +78,30 @@ auto to_string(TokenKind tk) -> std::string {
 }
 
 static const std::unordered_map<std::string, Token> KEYWORDS = {
-    {"fn", Token(TokenKind::FN, "fn")},
-    {"let", Token(TokenKind::LET, "let")},
-    {"const", Token(TokenKind::CONST, "const")},
-    {"i32", Token(TokenKind::I32, "i32")},
-    {"void", Token(TokenKind::VOID, "void")},
-    {"return", Token(TokenKind::RETURN, "return")},
+    {"fn", Token(TokenKind::FN, "fn")},          {"let", Token(TokenKind::LET, "let")},
+    {"const", Token(TokenKind::CONST, "const")}, {"i32", Token(TokenKind::I32, "i32")},
+    {"void", Token(TokenKind::VOID, "void")},    {"return", Token(TokenKind::RETURN, "return")},
     {"while", Token(TokenKind::WHILE, "while")},
 };
 
 static const std::unordered_map<char, Token> SIMPLE_CHAR_TO_TOKEN = {
-    {'+', Token(TokenKind::OP_ADD, "+")},
-    {'-', Token(TokenKind::OP_SUB, "-")},
-    {'*', Token(TokenKind::OP_MULT, "*")},
-    {'/', Token(TokenKind::OP_DIV, "/")},
-    {'=', Token(TokenKind::OP_SET, "=")},
-    {'!', Token(TokenKind::OP_NOT, "!")},
-    {'<', Token(TokenKind::OP_LS, "<")},
-    {'>', Token(TokenKind::OP_GT, ">")},
-    {'[', Token(TokenKind::EDGE_CLAMP_OPEN, "[")},
-    {']', Token(TokenKind::EDGE_CLAMP_CLOSE, "]")},
-    {'(', Token(TokenKind::CLAMP_OPEN, "(")},
-    {')', Token(TokenKind::CLAMP_CLOSE, ")")},
-    {'{', Token(TokenKind::CURLY_OPEN, "{")},
-    {'}', Token(TokenKind::CURLY_CLOSE, "}")},
-    {';', Token(TokenKind::SEMICOLON, ";")},
-    {',', Token(TokenKind::COMMA, ",")},
+    {'+', Token(TokenKind::OP_ADD, "+")},          {'-', Token(TokenKind::OP_SUB, "-")},
+    {'*', Token(TokenKind::OP_MULT, "*")},         {'/', Token(TokenKind::OP_DIV, "/")},
+    {'=', Token(TokenKind::OP_SET, "=")},          {'!', Token(TokenKind::OP_NOT, "!")},
+    {'<', Token(TokenKind::OP_LS, "<")},           {'>', Token(TokenKind::OP_GT, ">")},
+    {'[', Token(TokenKind::EDGE_CLAMP_OPEN, "[")}, {']', Token(TokenKind::EDGE_CLAMP_CLOSE, "]")},
+    {'(', Token(TokenKind::CLAMP_OPEN, "(")},      {')', Token(TokenKind::CLAMP_CLOSE, ")")},
+    {'{', Token(TokenKind::CURLY_OPEN, "{")},      {'}', Token(TokenKind::CURLY_CLOSE, "}")},
+    {';', Token(TokenKind::SEMICOLON, ";")},       {',', Token(TokenKind::COMMA, ",")},
 };
 
-static const std::unordered_map<char, std::unordered_map<char, Token>>
-    OPERATOR_MULTI_TRANSITION = {
-        {'=', {{'=', Token(TokenKind::OP_EQ, "==")}}},
-        {'!', {{'=', Token(TokenKind::OP_NEQ, "!=")}}},
-        {'<', {{'=', Token(TokenKind::OP_LS_EQ, "<=")}}},
-        {'>', {{'=', Token(TokenKind::OP_GT_EQ, ">=")}}},
-        {'-', {{'>', Token(TokenKind::ARROW, "->")}}},
+static const std::unordered_map<char, std::unordered_map<char, Token>> OPERATOR_MULTI_TRANSITION = {
+    {'=', {{'=', Token(TokenKind::OP_EQ, "==")}}},    {'!', {{'=', Token(TokenKind::OP_NEQ, "!=")}}},
+    {'<', {{'=', Token(TokenKind::OP_LS_EQ, "<=")}}}, {'>', {{'=', Token(TokenKind::OP_GT_EQ, ">=")}}},
+    {'-', {{'>', Token(TokenKind::ARROW, "->")}}},
 };
 
-template <typename... ARG>
-auto is_one_of(const std::optional<char> &opt, char c, ARG... args) -> bool {
+template <typename... ARG> auto is_one_of(const std::optional<char>& opt, char c, ARG... args) -> bool {
   if (!opt) {
     return false;
   }
@@ -131,9 +113,7 @@ auto is_one_of(const std::optional<char> &opt, char c, ARG... args) -> bool {
   }
   return false;
 }
-template <class F>
-auto read_while(LexStreamPtr &stream, std::string &value, const F &func)
-    -> OptChar {
+template <class F> auto read_while(LexStreamPtr& stream, std::string& value, const F& func) -> OptChar {
   auto opt_c = stream->next();
   while (opt_c && func(*opt_c)) {
     value += *opt_c;
@@ -142,16 +122,15 @@ auto read_while(LexStreamPtr &stream, std::string &value, const F &func)
   return opt_c;
 }
 
-auto read_while_digit(LexStreamPtr &stream, std::string &value) -> OptChar {
+auto read_while_digit(LexStreamPtr& stream, std::string& value) -> OptChar {
   return read_while(stream, value, detail::is_digit);
 }
 
-auto read_while_xdigit(LexStreamPtr &stream, std::string &value) -> OptChar {
+auto read_while_xdigit(LexStreamPtr& stream, std::string& value) -> OptChar {
   return read_while(stream, value, detail::is_xdigit);
 }
 template <typename... ARG>
-auto read_while_is_one_of(LexStreamPtr &stream, std::string &value, char c,
-                          ARG... args) -> OptChar {
+auto read_while_is_one_of(LexStreamPtr& stream, std::string& value, char c, ARG... args) -> OptChar {
   auto opt_c = stream->next();
   while (opt_c && detail::is_one_of(opt_c, c, args...)) {
     value += *opt_c;
@@ -162,13 +141,13 @@ auto read_while_is_one_of(LexStreamPtr &stream, std::string &value, char c,
 
 } // namespace detail
 
-auto operator<<(std::ostream &os, const Token &token) -> std::ostream & {
+auto operator<<(std::ostream& os, const Token& token) -> std::ostream& {
   os << "( kind = " << detail::to_string(token._kind);
   os << ", value = \"" << token._value << "\" )";
   return os;
 }
 
-auto operator<<(std::ostream &os, const TokenKind tk) -> std::ostream & {
+auto operator<<(std::ostream& os, const TokenKind tk) -> std::ostream& {
   os << detail::to_string(tk);
   return os;
 }
@@ -198,8 +177,7 @@ auto Lexer::lex_identifier_and_keyword(char c) -> OptResult {
   if (c == '_' || std::isalpha(c)) {
     std::string value;
     value += c;
-    detail::read_while(_stream, value,
-                       [](char x) { return x == '_' || std::isalnum(x); });
+    detail::read_while(_stream, value, [](char x) { return x == '_' || std::isalnum(x); });
 
     _pos += value.size();
     _stream->prev();
@@ -237,7 +215,7 @@ auto Lexer::lex_text(char c) -> OptResult {
   }
   return {};
 }
-auto Lexer::lex_hex_number(OptChar &opt_c, std::string &value) -> OptResult {
+auto Lexer::lex_hex_number(OptChar& opt_c, std::string& value) -> OptResult {
   if (detail::is_one_of(opt_c, 'x', 'x')) {
     value += *opt_c;
     opt_c = detail::read_while_xdigit(_stream, value);
@@ -249,7 +227,7 @@ auto Lexer::lex_hex_number(OptChar &opt_c, std::string &value) -> OptResult {
   return {};
 }
 
-auto Lexer::lex_bin_number(OptChar &opt_c, std::string &value) -> OptResult {
+auto Lexer::lex_bin_number(OptChar& opt_c, std::string& value) -> OptResult {
   if (detail::is_one_of(opt_c, 'b', 'B')) {
     value += *opt_c;
     opt_c = detail::read_while_is_one_of(_stream, value, '0', '1');
@@ -261,7 +239,7 @@ auto Lexer::lex_bin_number(OptChar &opt_c, std::string &value) -> OptResult {
   return {};
 }
 
-auto Lexer::lex_float_number(OptChar &opt_c, std::string &value) -> OptResult {
+auto Lexer::lex_float_number(OptChar& opt_c, std::string& value) -> OptResult {
   if (*opt_c == '.') {
     value += *opt_c;
     opt_c = detail::read_while_digit(_stream, value);
@@ -331,5 +309,6 @@ auto Lexer::next() -> ResultOr<Token> {
   return Token(TokenKind::END_OF_FILE, "EOF");
 }
 
-Lexer::Lexer(const std::shared_ptr<LexerStream> &stream)
-    : _stream(stream), _buffer(), _lookahead(false), _line(1), _pos(0) {}
+Lexer::Lexer(const std::shared_ptr<LexerStream>& stream)
+    : _stream(stream), _buffer(), _lookahead(false), _line(1), _pos(0) {
+}

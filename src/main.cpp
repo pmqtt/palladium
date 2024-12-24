@@ -5,8 +5,7 @@
 #include "VirtualMachine.h"
 #include <iostream>
 
-template <class VM>
-ResultOr<bool> palladium_write(VM *vm, const std::vector<VMType> &args) {
+template <class VM> ResultOr<bool> palladium_write(VM* vm, const std::vector<VMType>& args) {
   UNUSED(vm);
   auto fd = get_primitive_t<int>(args[0]);
   if (!fd) {
@@ -23,7 +22,7 @@ ResultOr<bool> palladium_write(VM *vm, const std::vector<VMType> &args) {
   return true;
 }
 
-auto main(int argc, char **argv) -> int {
+auto main(int argc, char** argv) -> int {
   UNUSED(argc);
   UNUSED(argv);
   using VM = VirtualMachine<AggresivPolicy>;
@@ -60,8 +59,7 @@ auto main(int argc, char **argv) -> int {
   VM vm(program, 128);
   vm.add_native_function("write", palladium_write<VM>, 2);
 
-  std::vector<VM::InstructionTypeV> fcode1 = {
-      Push<VM>("Hallo Welt from function\n"), Print<VM>(), RetVoid<VM>()};
+  std::vector<VM::InstructionTypeV> fcode1 = {Push<VM>("Hallo Welt from function\n"), Print<VM>(), RetVoid<VM>()};
 
   std::vector<VM::InstructionTypeV> fcode2 = {Add<VM>(1), Return<VM>(0)};
 

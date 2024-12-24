@@ -86,28 +86,20 @@ SIMPLE_TEST_CASE(VMMemoryLargeAllocaButInOneSegmentTest) {
   for (std::size_t i = 0; i < VMMemorySegment::EIGHT_BYTE_BLOCK_END; ++i) {
     REQUIRE(memory.segments().front().sub_blocks_free_list[i] == true);
   }
-  REQUIRE(
-      memory.segments()
-          .front()
-          .sub_blocks_free_list[VMMemorySegment::EIGHT_BYTE_BLOCK_END + 1] ==
-      true);
-  REQUIRE(
-      memory.segments()
-          .front()
-          .sub_blocks_free_list[VMMemorySegment::EIGHT_BYTE_BLOCK_END + 2] ==
-      false);
+  REQUIRE(memory.segments().front().sub_blocks_free_list[VMMemorySegment::EIGHT_BYTE_BLOCK_END + 1] == true);
+  REQUIRE(memory.segments().front().sub_blocks_free_list[VMMemorySegment::EIGHT_BYTE_BLOCK_END + 2] == false);
 }
 
 SIMPLE_TEST_CASE(VMMemoryLargeAllocaInTwoSegmentTest) {
   VMMemory<VirtualMachine<AggresivPolicy>> memory(256);
   std::size_t adr = memory.allocate(256);
-  for (const auto &x : memory.segments()) {
+  for (const auto& x : memory.segments()) {
     for (std::size_t i = 0; i < VMMemorySegment::SIXTEEN_BYTE_BLOCK_END; ++i) {
       REQUIRE(x.sub_blocks_free_list[i] == true);
     }
   }
   memory.deallocate(adr);
-  for (auto &x : memory.segments()) {
+  for (auto& x : memory.segments()) {
     REQUIRE(x.sub_blocks_free_list.none());
   }
 }
@@ -122,7 +114,7 @@ SIMPLE_TEST_CASE(VMMemoryLargeAllocaInOneAndHalfSegmentTest) {
     REQUIRE((*iter).sub_blocks_free_list[i] == true);
   }
   memory.deallocate(adr);
-  for (auto &x : memory.segments()) {
+  for (auto& x : memory.segments()) {
     REQUIRE(x.sub_blocks_free_list.none());
   }
 }
@@ -140,7 +132,7 @@ SIMPLE_TEST_CASE(VMMemoryLargeAllocaInTwoAndHalfSegmentTest) {
   }
 
   memory.deallocate(adr);
-  for (auto &x : memory.segments()) {
+  for (auto& x : memory.segments()) {
     REQUIRE(x.sub_blocks_free_list.none());
   }
 }

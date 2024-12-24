@@ -39,8 +39,7 @@ SIMPLE_TEST_CASE(TokenKindConverter) {
                                     "WHILE",
                                     "END_OF_FILE"};
 
-  constexpr std::size_t max_token_kind =
-      static_cast<std::size_t>(TokenKind::MAX_TOKEN_KIND);
+  constexpr std::size_t max_token_kind = static_cast<std::size_t>(TokenKind::MAX_TOKEN_KIND);
 
   for (std::size_t i = 0; i < max_token_kind; ++i) {
     std::cout << "Tst:" << i << std::endl;

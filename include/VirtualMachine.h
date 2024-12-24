@@ -16,11 +16,18 @@
 
 struct FunctionEntry {
   FunctionEntry(std::string name, uint8_t arg_count, std::size_t adr)
-      : _name(std::move(name)), _argument_count(arg_count), _address(adr) {}
+      : _name(std::move(name)), _argument_count(arg_count), _address(adr) {
+  }
 
-  auto name() const -> const std::string & { return _name; }
-  auto argument_count() const -> uint8_t { return _argument_count; }
-  auto address() const -> std::size_t { return _address; }
+  auto name() const -> const std::string& {
+    return _name;
+  }
+  auto argument_count() const -> uint8_t {
+    return _argument_count;
+  }
+  auto address() const -> std::size_t {
+    return _address;
+  }
 
 private:
   std::string _name;
@@ -28,19 +35,20 @@ private:
   std::size_t _address;
 };
 
-template <class VM>
-using NativeFunction =
-    std::function<ResultOr<bool>(VM *vm, const std::vector<VMType> &)>;
+template <class VM> using NativeFunction = std::function<ResultOr<bool>(VM* vm, const std::vector<VMType>&)>;
 
 template <class VM> struct NativeFunctionEntry {
-  NativeFunctionEntry(std::string name, const NativeFunction<VM> &func,
-                      uint8_t arg_count)
-      : _name(name), _func(func), _argument_count(arg_count) {}
+  NativeFunctionEntry(std::string name, const NativeFunction<VM>& func, uint8_t arg_count)
+      : _name(name), _func(func), _argument_count(arg_count) {
+  }
 
-  auto name() const -> const std::string & { return _name; }
-  auto argument_count() const -> uint8_t { return _argument_count; }
-  auto operator()(VM *vm, const std::vector<VMType> &args) const
-      -> ResultOr<bool> {
+  auto name() const -> const std::string& {
+    return _name;
+  }
+  auto argument_count() const -> uint8_t {
+    return _argument_count;
+  }
+  auto operator()(VM* vm, const std::vector<VMType>& args) const -> ResultOr<bool> {
     return _func(vm, args);
   }
 
@@ -61,24 +69,20 @@ public:
   using InstructionTypeV = InstructionType<VirtualMachine<POLICY>>;
 
 public:
-  static auto make(const std::vector<InstructionTypeV> &program)
-      -> VirtualMachine<P> {
+  static auto make(const std::vector<InstructionTypeV>& program) -> VirtualMachine<P> {
     return VirtualMachine<P>(program);
   }
-  VirtualMachine(const std::vector<InstructionTypeV> &program,
-                 std::size_t mem_size = 1024 * 1024 * 1024)
-      : _program(program), _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1),
-        _memory(mem_size) {}
+  VirtualMachine(const std::vector<InstructionTypeV>& program, std::size_t mem_size = 1024 * 1024 * 1024)
+      : _program(program), _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1), _memory(mem_size) {
+  }
 
-  void add_function(const std::string fname,
-                    const std::vector<InstructionTypeV> &code,
-                    uint8_t arg_count) {
+  void add_function(const std::string fname, const std::vector<InstructionTypeV>& code, uint8_t arg_count) {
 
     _function_section.push_back({fname, arg_count, _program.size()});
     std::copy(code.cbegin(), code.cend(), std::back_inserter(_program));
   }
-  auto function_entry(const std::string &fname) const -> const FunctionEntry {
-    for (const auto &f_item : _function_section) {
+  auto function_entry(const std::string& fname) const -> const FunctionEntry {
+    for (const auto& f_item : _function_section) {
       if (f_item.name() == fname) {
         return f_item;
       }
@@ -86,15 +90,13 @@ public:
     panic("function " + fname + " not exist");
   }
 
-  void add_native_function(const std::string fname,
-                           const NativeFunction<VirtualMachine<POLICY>> &code,
+  void add_native_function(const std::string fname, const NativeFunction<VirtualMachine<POLICY>>& code,
                            uint8_t arg_count) {
 
     _native_section.emplace_back(fname, code, arg_count);
   }
-  auto native_function_entry(const std::string &fname) const
-      -> const NativeFunctionEntry<VirtualMachine<POLICY>> {
-    for (const auto &f_item : _native_section) {
+  auto native_function_entry(const std::string& fname) const -> const NativeFunctionEntry<VirtualMachine<POLICY>> {
+    for (const auto& f_item : _native_section) {
       if (f_item.name() == fname) {
         return f_item;
       }
@@ -107,9 +109,9 @@ public:
     do {
       old_pc = _pc;
       std::visit(
-          [&](auto &instruction) {
+          [&](auto& instruction) {
             InstructionResult res = instruction.execute(this);
-            res.error([](const Error &err) {
+            res.error([](const Error& err) {
               std::cerr << "Instruction failed: " << err.msg() << "\n";
               std::abort();
             });
@@ -124,9 +126,9 @@ public:
       std::string cmd;
       old_pc = _pc;
       std::visit(
-          [&](auto &instruction) {
+          [&](auto& instruction) {
             InstructionResult res = instruction.execute(this);
-            res.error([](const Error &err) {
+            res.error([](const Error& err) {
               std::cerr << "Instruction failed: " << err.msg() << "\n";
               std::abort();
             });
@@ -143,20 +145,35 @@ public:
     } while (_pc != old_pc);
   }
 
-  template <class... ARG> auto init_registers(ARG &&...args) {
+  template <class... ARG> auto init_registers(ARG&&... args) {
     std::vector<int> tmp = {std::forward<ARG>(args)...};
-    std::copy_n(tmp.begin(), std::min(tmp.size(), _registers.size()),
-                _registers.begin());
+    std::copy_n(tmp.begin(), std::min(tmp.size(), _registers.size()), _registers.begin());
   }
-  auto reg_0() const -> VMType { return _registers[0]; }
-  auto registers() -> std::vector<VMType> & { return _registers; }
-  void inc_pc(std::size_t inc = 1) { _pc += inc; }
-  auto pc() const -> std::size_t { return _pc; }
-  void inc_sp(int inc = 1) { _sp += inc; }
-  void set_sp(int sp) { _sp = sp; }
-  void set_pc(std::size_t pc) { _pc = pc; }
-  auto stack_pointer() const -> int { return _sp; }
-  auto stack_top() -> VMType & {
+  auto reg_0() const -> VMType {
+    return _registers[0];
+  }
+  auto registers() -> std::vector<VMType>& {
+    return _registers;
+  }
+  void inc_pc(std::size_t inc = 1) {
+    _pc += inc;
+  }
+  auto pc() const -> std::size_t {
+    return _pc;
+  }
+  void inc_sp(int inc = 1) {
+    _sp += inc;
+  }
+  void set_sp(int sp) {
+    _sp = sp;
+  }
+  void set_pc(std::size_t pc) {
+    _pc = pc;
+  }
+  auto stack_pointer() const -> int {
+    return _sp;
+  }
+  auto stack_top() -> VMType& {
     P::check_stack_bounds(_sp, _stack.max_size());
     return _stack[_sp];
   }
@@ -175,7 +192,7 @@ public:
     _call_stack.pop_back();
   }
 
-  void stack_push(const VMType &value) {
+  void stack_push(const VMType& value) {
     _sp += 1;
     P::check_stack_bounds(_sp, _stack.max_size());
     if (std::cmp_less(_sp, _stack.size())) {
@@ -189,9 +206,13 @@ public:
     return VMAddress{_memory.allocate(size)};
   }
 
-  void deallocate(const VMAddress &adr) { _memory.deallocate(adr.get()); }
+  void deallocate(const VMAddress& adr) {
+    _memory.deallocate(adr.get());
+  }
 
-  void print_memory() const { std::cout << _memory; }
+  void print_memory() const {
+    std::cout << _memory;
+  }
 
 private:
   void print_registers() {
@@ -202,7 +223,8 @@ private:
       std::cout << "\n";
     }
   }
-  void print_stack() {}
+  void print_stack() {
+  }
 
 private:
   std::vector<InstructionTypeV> _program;

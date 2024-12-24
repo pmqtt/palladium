@@ -7,14 +7,14 @@
 #include <utility>
 
 struct AggresivPolicy {
-  static void check_stack_bounds([[maybe_unused]] int sp,
-                                 [[maybe_unused]] std::size_t max_size) {}
-  static void print_dbg([[maybe_unused]] const std::string &inst) {}
-  template <class VM>
-  static void check_register_bounds([[maybe_unused]] VM *vm,
-                                    [[maybe_unused]] std::size_t index) {}
-  static void check_memory_bound([[maybe_unused]] std::size_t index,
-                                 [[maybe_unused]] std::size_t sz) {}
+  static void check_stack_bounds([[maybe_unused]] int sp, [[maybe_unused]] std::size_t max_size) {
+  }
+  static void print_dbg([[maybe_unused]] const std::string& inst) {
+  }
+  template <class VM> static void check_register_bounds([[maybe_unused]] VM* vm, [[maybe_unused]] std::size_t index) {
+  }
+  static void check_memory_bound([[maybe_unused]] std::size_t index, [[maybe_unused]] std::size_t sz) {
+  }
 
   static void check_memory_adress(std::size_t base, std::size_t destination) {
     if (base > destination) {
@@ -39,9 +39,9 @@ struct DebugPolicy {
     }
   }
 
-  static void print_dbg(const std::string &inst) {
+  static void print_dbg(const std::string& inst) {
     std::string msg;
-    for (auto &c : inst) {
+    for (auto& c : inst) {
       if (std::isspace(c) && c != ' ') {
         msg += "\\n";
       } else {
@@ -57,8 +57,7 @@ struct DebugPolicy {
     }
   }
 
-  template <class VM>
-  static void check_register_bounds(VM *vm, std::size_t index) {
+  template <class VM> static void check_register_bounds(VM* vm, std::size_t index) {
     if (index >= vm->registers().size()) {
       panic("index " + std::to_string(index) + "out of bounds");
     }

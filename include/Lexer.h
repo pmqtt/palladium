@@ -56,7 +56,7 @@ enum class TokenKind {
   MAX_TOKEN_KIND,
 };
 
-auto operator<<(std::ostream &os, const TokenKind tk) -> std::ostream &;
+auto operator<<(std::ostream& os, const TokenKind tk) -> std::ostream&;
 
 namespace detail {
 auto to_string(TokenKind tk) -> std::string;
@@ -64,19 +64,28 @@ auto to_string(TokenKind tk) -> std::string;
 
 class Token final {
 public:
-  Token(const TokenKind &tk, std::string value, std::size_t line = 1,
-        std::size_t pos = 0)
-      : _kind(tk), _value(std::move(value)), _line(line), _pos(pos) {}
+  Token(const TokenKind& tk, std::string value, std::size_t line = 1, std::size_t pos = 0)
+      : _kind(tk), _value(std::move(value)), _line(line), _pos(pos) {
+  }
 
-  auto operator==(const TokenKind &rhs) -> bool { return _kind == rhs; }
+  auto operator==(const TokenKind& rhs) -> bool {
+    return _kind == rhs;
+  }
 
-  auto kind() const -> TokenKind { return _kind; }
-  auto value() const -> const std::string & { return _value; }
-  auto line() const -> std::size_t { return _line; }
-  auto pos() const -> std::size_t { return _pos; }
+  auto kind() const -> TokenKind {
+    return _kind;
+  }
+  auto value() const -> const std::string& {
+    return _value;
+  }
+  auto line() const -> std::size_t {
+    return _line;
+  }
+  auto pos() const -> std::size_t {
+    return _pos;
+  }
 
-  friend auto operator<<(std::ostream &os, const Token &token)
-      -> std::ostream &;
+  friend auto operator<<(std::ostream& os, const Token& token) -> std::ostream&;
 
 private:
   TokenKind _kind;
@@ -91,20 +100,19 @@ using OptResult = std::optional<ResultOr<Token>>;
 
 class Lexer final {
 public:
-  Lexer(const LexStreamPtr &stream);
+  Lexer(const LexStreamPtr& stream);
 
   auto next() -> ResultOr<Token>;
 
-  template <typename... ARG>
-  auto lookahead(const Token &tk, ARG &&...arg) -> bool;
+  template <typename... ARG> auto lookahead(const Token& tk, ARG&&... arg) -> bool;
 
 private:
   auto lex_operator(char c) -> OptResult;
   auto lex_identifier_and_keyword(char c) -> OptResult;
   auto lex_text(char c) -> OptResult;
-  auto lex_hex_number(OptChar &opt_c, std::string &value) -> OptResult;
-  auto lex_bin_number(OptChar &opt_c, std::string &value) -> OptResult;
-  auto lex_float_number(OptChar &opt_c, std::string &value) -> OptResult;
+  auto lex_hex_number(OptChar& opt_c, std::string& value) -> OptResult;
+  auto lex_bin_number(OptChar& opt_c, std::string& value) -> OptResult;
+  auto lex_float_number(OptChar& opt_c, std::string& value) -> OptResult;
   auto lex_number(char c) -> OptResult;
 
 private:
@@ -115,8 +123,7 @@ private:
   std::size_t _pos;
 };
 
-template <typename... ARG>
-auto Lexer::lookahead(const Token &tk, ARG &&...arg) -> bool {
+template <typename... ARG> auto Lexer::lookahead(const Token& tk, ARG&&... arg) -> bool {
   Switch<bool> lookahead_switch(_lookahead, true, false);
   std::deque<Token> rules = {tk, std::forward<ARG>(arg)...};
   if (_buffer.size() < rules.size()) {
@@ -133,11 +140,8 @@ auto Lexer::lookahead(const Token &tk, ARG &&...arg) -> bool {
   if (_buffer.size() >= rules.size()) {
     int index = 0;
     for (auto rule : rules) {
-      auto res = _buffer[index]
-                     .map([&](const Token &tok) -> bool {
-                       return tok.kind() == rule.kind();
-                     })
-                     .result_or(false);
+      auto res =
+          _buffer[index].map([&](const Token& tok) -> bool { return tok.kind() == rule.kind(); }).result_or(false);
       if (!res) {
         return false;
       }
