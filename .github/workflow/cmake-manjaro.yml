@@ -1,0 +1,38 @@
+name: Build & Test (Manjaro)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    # Wir nutzen einen Container auf Basis Manjaro
+    # Da GitHub Actions keine vorgefertigte Manjaro-Runner-Umgebung anbietet.
+    runs-on: ubuntu-latest
+    container:
+      image: manjarolinux/base:latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Update system & install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel cmake
+
+      - name: Configure (CMake)
+        run: |
+          cmake .
+
+      - name: Build (make)
+        run: |
+          make
+
+      - name: Test (ctest)
+        run: |
+          make test 
