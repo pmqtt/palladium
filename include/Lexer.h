@@ -41,7 +41,7 @@ enum class TokenKind {
   SEMICOLON, // ;
   ARROW,     // ->
   COMMA,     // ,
-
+  COLON,     // :
   // KEYWORDS
   FN,     // fn
   LET,    // let

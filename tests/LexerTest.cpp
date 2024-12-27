@@ -21,7 +21,7 @@ std::string VALUE__;
 auto test_token = [](const Token& tk) -> bool { return tk.kind() == KIND__; };
 auto test_tk_value = [](const Token& tk) -> bool { return tk.kind() == KIND__ && tk.value() == VALUE__; };
 SIMPLE_TEST_CASE(LexerOperatorTest) {
-  auto stream = std::make_shared<LexerStringStream>("+-*/===!!=");
+  auto stream = std::make_shared<LexerStringStream>("+-*/===!!=:");
   Lexer lex(stream);
   LEX_REQUIERE_TOKEN(TokenKind::OP_ADD, test_token);
   LEX_REQUIERE_TOKEN(TokenKind::OP_SUB, test_token);
@@ -31,6 +31,7 @@ SIMPLE_TEST_CASE(LexerOperatorTest) {
   LEX_REQUIERE_TOKEN(TokenKind::OP_SET, test_token);
   LEX_REQUIERE_TOKEN(TokenKind::OP_NOT, test_token);
   LEX_REQUIERE_TOKEN(TokenKind::OP_NEQ, test_token);
+  LEX_REQUIERE_TOKEN(TokenKind::COLON, test_token);
   LEX_REQUIERE_TOKEN(TokenKind::END_OF_FILE, test_token);
 }
 

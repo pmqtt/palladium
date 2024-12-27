@@ -34,39 +34,13 @@ auto is_digit = [](char x) { return std::isdigit(x); };
 auto is_xdigit = [](char x) { return std::isxdigit(x); };
 
 auto to_string(TokenKind tk) -> std::string {
-  static const char* converter[] = {"IDENTIFIER",
-                                    "TEXT",
-                                    "INTEGER",
-                                    "DOUBLE",
-                                    "OP_ADD",
-                                    "OP_SUB",
-                                    "OP_MULT",
-                                    "OP_DIV",
-                                    "OP_SET",
-                                    "OP_EQ",
-                                    "OP_NEQ",
-                                    "OP_NOT",
-                                    "OP_LS",
-                                    "OP_LS_EQ",
-                                    "OP_GT",
-                                    "OP_GT_EQ",
-                                    "EDGE_CLAMP_OPEN",
-                                    "EDGE_CLAMP_CLOSE",
-                                    "CLAMP_OPEN",
-                                    "CLAMP_CLOSE",
-                                    "CURLY_OPEN",
-                                    "CURLY_CLOSE",
-                                    "SEMICOLON",
-                                    "ARROW",
-                                    "COMMA",
-                                    "FN",
-                                    "LET",
-                                    "CONST",
-                                    "I32",
-                                    "VOID",
-                                    "RETURN",
-                                    "WHILE",
-                                    "END_OF_FILE"};
+  static const char* converter[] = {
+      "IDENTIFIER", "TEXT",        "INTEGER",    "DOUBLE",      "OP_ADD",          "OP_SUB",
+      "OP_MULT",    "OP_DIV",      "OP_SET",     "OP_EQ",       "OP_NEQ",          "OP_NOT",
+      "OP_LS",      "OP_LS_EQ",    "OP_GT",      "OP_GT_EQ",    "EDGE_CLAMP_OPEN", "EDGE_CLAMP_CLOSE",
+      "CLAMP_OPEN", "CLAMP_CLOSE", "CURLY_OPEN", "CURLY_CLOSE", "SEMICOLON",       "ARROW",
+      "COMMA",      "COLON",       "FN",         "LET",         "CONST",           "I32",
+      "VOID",       "RETURN",      "WHILE",      "END_OF_FILE"};
 
   std::cout << "INT TK: " << static_cast<std::size_t>(tk) << " : " << std::size(converter) << std::endl;
   if (static_cast<std::size_t>(tk) < std::size(converter)) {
@@ -84,16 +58,23 @@ static const std::unordered_map<std::string, Token> KEYWORDS = {
     {"while", Token(TokenKind::WHILE, "while")},
 };
 
-static const std::unordered_map<char, Token> SIMPLE_CHAR_TO_TOKEN = {
-    {'+', Token(TokenKind::OP_ADD, "+")},          {'-', Token(TokenKind::OP_SUB, "-")},
-    {'*', Token(TokenKind::OP_MULT, "*")},         {'/', Token(TokenKind::OP_DIV, "/")},
-    {'=', Token(TokenKind::OP_SET, "=")},          {'!', Token(TokenKind::OP_NOT, "!")},
-    {'<', Token(TokenKind::OP_LS, "<")},           {'>', Token(TokenKind::OP_GT, ">")},
-    {'[', Token(TokenKind::EDGE_CLAMP_OPEN, "[")}, {']', Token(TokenKind::EDGE_CLAMP_CLOSE, "]")},
-    {'(', Token(TokenKind::CLAMP_OPEN, "(")},      {')', Token(TokenKind::CLAMP_CLOSE, ")")},
-    {'{', Token(TokenKind::CURLY_OPEN, "{")},      {'}', Token(TokenKind::CURLY_CLOSE, "}")},
-    {';', Token(TokenKind::SEMICOLON, ";")},       {',', Token(TokenKind::COMMA, ",")},
-};
+static const std::unordered_map<char, Token> SIMPLE_CHAR_TO_TOKEN = {{'+', Token(TokenKind::OP_ADD, "+")},
+                                                                     {'-', Token(TokenKind::OP_SUB, "-")},
+                                                                     {'*', Token(TokenKind::OP_MULT, "*")},
+                                                                     {'/', Token(TokenKind::OP_DIV, "/")},
+                                                                     {'=', Token(TokenKind::OP_SET, "=")},
+                                                                     {'!', Token(TokenKind::OP_NOT, "!")},
+                                                                     {'<', Token(TokenKind::OP_LS, "<")},
+                                                                     {'>', Token(TokenKind::OP_GT, ">")},
+                                                                     {'[', Token(TokenKind::EDGE_CLAMP_OPEN, "[")},
+                                                                     {']', Token(TokenKind::EDGE_CLAMP_CLOSE, "]")},
+                                                                     {'(', Token(TokenKind::CLAMP_OPEN, "(")},
+                                                                     {')', Token(TokenKind::CLAMP_CLOSE, ")")},
+                                                                     {'{', Token(TokenKind::CURLY_OPEN, "{")},
+                                                                     {'}', Token(TokenKind::CURLY_CLOSE, "}")},
+                                                                     {';', Token(TokenKind::SEMICOLON, ";")},
+                                                                     {',', Token(TokenKind::COMMA, ",")},
+                                                                     {':', Token(TokenKind::COLON, ":")}};
 
 static const std::unordered_map<char, std::unordered_map<char, Token>> OPERATOR_MULTI_TRANSITION = {
     {'=', {{'=', Token(TokenKind::OP_EQ, "==")}}},    {'!', {{'=', Token(TokenKind::OP_NEQ, "!=")}}},
