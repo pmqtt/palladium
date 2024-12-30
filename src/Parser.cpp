@@ -12,7 +12,7 @@ Parser::Parser(const std::string& code)
   }
 }
 
-auto Parser::parse() -> bool {
+auto Parser::parse() -> AstNode {
   AstNode translation_unit = parse_translation_unit();
   if (translation_unit) {
     return true;
