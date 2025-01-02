@@ -1,9 +1,22 @@
 #ifndef PALLADIUM_VISITOR_H
 #define PALLADIUM_VISITOR_H
-#include "TranslationUnitNode.h"
 #include "Util.h"
+#include <memory>
 
 using VisitResult = ResultOr<bool>;
+class TranslationUnitNode;
+class FunctionNode;
+class StatementsNode;
+class StatementNode;
+class VariableDeclarationNode;
+class ConstantDeclarationNode;
+class LoopNode;
+class ReturnStatementNode;
+class ExpressionNode;
+class ArrayInitializationNode;
+class BinaryExpressionNode;
+class ConditionNode;
+class TypeNode;
 
 class Visitor {
 public:
@@ -97,15 +110,15 @@ public:
     UNUSED(node);
     return true;
   }
-  virtual auto begin(const std::shared_ptr<ReturnStatement>& node) -> VisitResult {
+  virtual auto begin(const std::shared_ptr<ReturnStatementNode>& node) -> VisitResult {
     UNUSED(node);
     return true;
   }
-  virtual auto visit(const std::shared_ptr<ReturnStatement>& node) -> VisitResult {
+  virtual auto visit(const std::shared_ptr<ReturnStatementNode>& node) -> VisitResult {
     UNUSED(node);
     return true;
   }
-  virtual auto end(const std::shared_ptr<ReturnStatement>& node) -> VisitResult {
+  virtual auto end(const std::shared_ptr<ReturnStatementNode>& node) -> VisitResult {
     UNUSED(node);
     return true;
   }
@@ -133,15 +146,15 @@ public:
     UNUSED(node);
     return true;
   }
-  virtual auto begin(const std::shared_ptr<BinarayExpressionNode>& node) -> VisitResult {
+  virtual auto begin(const std::shared_ptr<BinaryExpressionNode>& node) -> VisitResult {
     UNUSED(node);
     return true;
   }
-  virtual auto visit(const std::shared_ptr<BinarayExpressionNode>& node) -> VisitResult {
+  virtual auto visit(const std::shared_ptr<BinaryExpressionNode>& node) -> VisitResult {
     UNUSED(node);
     return true;
   }
-  virtual auto end(const std::shared_ptr<BinarayExpressionNode>& node) -> VisitResult {
+  virtual auto end(const std::shared_ptr<BinaryExpressionNode>& node) -> VisitResult {
     UNUSED(node);
     return true;
   }

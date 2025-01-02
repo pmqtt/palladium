@@ -5,7 +5,7 @@
 #include <string>
 #include "AstNode.h"
 
-class ConstantDeclarationNode : public AstNode {
+class ConstantDeclarationNode : public AstNode, public std::enable_shared_from_this<ConstantDeclarationNode> {
 public:
   ~ConstantDeclarationNode() = default;
   ConstantDeclarationNode();

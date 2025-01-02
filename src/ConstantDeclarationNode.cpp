@@ -1,10 +1,12 @@
 #include "ConstantDeclarationNode.h"
+#include "Vistor.h"
 
-ConstantDeclarationNode::ConstantDeclarationNode()
-{
-    // Constructor implementation
+ConstantDeclarationNode::ConstantDeclarationNode() {
+  // Constructor implementation
 }
 
 void ConstantDeclarationNode::accept(const std::shared_ptr<Visitor>& v) {
-    // Implementation of accept method
+  v->begin(shared_from_this());
+  v->visit(shared_from_this());
+  v->end(shared_from_this());
 }

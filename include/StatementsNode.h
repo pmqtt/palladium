@@ -5,7 +5,7 @@
 #include <string>
 #include "AstNode.h"
 
-class StatementsNode : public AstNode {
+class StatementsNode : public AstNode, public std::enable_shared_from_this<StatementsNode> {
 public:
   ~StatementsNode() = default;
   StatementsNode();

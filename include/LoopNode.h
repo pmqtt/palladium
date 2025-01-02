@@ -5,7 +5,7 @@
 #include <string>
 #include "AstNode.h"
 
-class LoopNode : public AstNode {
+class LoopNode : public AstNode, public std::enable_shared_from_this<LoopNode> {
 public:
   ~LoopNode() = default;
   LoopNode();

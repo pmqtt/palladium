@@ -5,7 +5,7 @@
 #include <string>
 #include "AstNode.h"
 
-class TypeNode : public AstNode {
+class TypeNode : public AstNode, public std::enable_shared_from_this<TypeNode> {
 public:
   ~TypeNode() = default;
   TypeNode();

@@ -5,7 +5,7 @@
 #include <string>
 #include "AstNode.h"
 
-class BinaryExpressionNode : public AstNode {
+class BinaryExpressionNode : public AstNode, public std::enable_shared_from_this<BinaryExpressionNode> {
 public:
   ~BinaryExpressionNode() = default;
   BinaryExpressionNode();

@@ -5,7 +5,7 @@
 #include <string>
 #include "AstNode.h"
 
-class ReturnStatementNode : public AstNode {
+class ReturnStatementNode : public AstNode, public std::enable_shared_from_this<ReturnStatementNode> {
 public:
   ~ReturnStatementNode() = default;
   ReturnStatementNode();

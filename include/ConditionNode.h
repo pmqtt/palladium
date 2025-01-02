@@ -5,7 +5,7 @@
 #include <string>
 #include "AstNode.h"
 
-class ConditionNode : public AstNode {
+class ConditionNode : public AstNode, public std::enable_shared_from_this<ConditionNode> {
 public:
   ~ConditionNode() = default;
   ConditionNode();

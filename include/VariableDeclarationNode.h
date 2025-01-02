@@ -5,7 +5,7 @@
 #include <string>
 #include "AstNode.h"
 
-class VariableDeclarationNode : public AstNode {
+class VariableDeclarationNode : public AstNode, public std::enable_shared_from_this<VariableDeclarationNode> {
 public:
   ~VariableDeclarationNode() = default;
   VariableDeclarationNode();

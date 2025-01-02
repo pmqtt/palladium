@@ -5,7 +5,7 @@
 #include <string>
 #include "AstNode.h"
 
-class ArrayInitializationNode : public AstNode {
+class ArrayInitializationNode : public AstNode, public std::enable_shared_from_this<ArrayInitializationNode> {
 public:
   ~ArrayInitializationNode() = default;
   ArrayInitializationNode();

@@ -5,7 +5,7 @@
 #include <string>
 #include "AstNode.h"
 
-class TranslationUnitNode : public AstNode {
+class TranslationUnitNode : public AstNode, public std::enable_shared_from_this<TranslationUnitNode> {
 public:
   ~TranslationUnitNode() = default;
   TranslationUnitNode();
