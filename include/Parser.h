@@ -10,7 +10,7 @@ class Parser {
 public:
   Parser(const std::string& code);
 
-  auto parse() -> bool;
+  auto parse() -> AstNode;
 
 private:
   auto parse_translation_unit() -> AstNode;
