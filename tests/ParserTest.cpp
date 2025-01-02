@@ -4,10 +4,10 @@ PURGE_MAIN
 
 SIMPLE_TEST_CASE(ParserSimpleTest1) {
   Parser p("fn main() -> i32 { return 0; }");
-  REQUIRE(p.parse());
+  REQUIRE(p.parse().ok() == true);
 }
 
 SIMPLE_TEST_CASE(ParserSimpleTest_Failed_1) {
   Parser p("fn main() -> i32 { return 0 }");
-  REQUIRE(p.parse() == false);
+  REQUIRE(p.parse().ok() == false);
 }

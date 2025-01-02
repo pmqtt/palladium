@@ -8,8 +8,12 @@
 class LoopNode : public AstNode, public std::enable_shared_from_this<LoopNode> {
 public:
   ~LoopNode() = default;
-  LoopNode();
+  LoopNode(const AstPtr& condition, const AstPtr& statements);
   void accept(const std::shared_ptr<Visitor>& v) override;
+
+private:
+  AstPtr _condition;
+  AstPtr _statements;
 };
 
 #endif // LOOPNODE_H

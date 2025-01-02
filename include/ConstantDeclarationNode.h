@@ -8,8 +8,12 @@
 class ConstantDeclarationNode : public AstNode, public std::enable_shared_from_this<ConstantDeclarationNode> {
 public:
   ~ConstantDeclarationNode() = default;
-  ConstantDeclarationNode();
+  ConstantDeclarationNode(const std::string& var_name, const AstPtr& expression);
   void accept(const std::shared_ptr<Visitor>& v) override;
+
+private:
+  std::string _var_name;
+  AstPtr _expression;
 };
 
 #endif // CONSTANTDECLARATIONNODE_H

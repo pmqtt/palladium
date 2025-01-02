@@ -1,10 +1,12 @@
 #ifndef PALLADIUM_PARSER_H
 #define PALLADIUM_PARSER_H
 #include <optional>
+#include "AstNode.h"
 #include "Lexer.h"
+#include "Util.h"
 #include <string>
 
-using ParserResult = bool;
+using ParserResult = ResultOr<AstPtr>;
 
 class Parser {
 public:

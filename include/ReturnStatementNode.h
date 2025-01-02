@@ -8,8 +8,11 @@
 class ReturnStatementNode : public AstNode, public std::enable_shared_from_this<ReturnStatementNode> {
 public:
   ~ReturnStatementNode() = default;
-  ReturnStatementNode();
+  ReturnStatementNode(const AstPtr& expression);
   void accept(const std::shared_ptr<Visitor>& v) override;
+
+private:
+  AstPtr _expression;
 };
 
 #endif // RETURNSTATEMENTNODE_H

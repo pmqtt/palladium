@@ -1,7 +1,7 @@
 #include "Visitor.h"
 #include "TypeNode.h"
 
-TypeNode::TypeNode() {
+TypeNode::TypeNode(const std::string& identfier, TypeKind kind) : _identifier(identfier), _kind(kind) {
   // Constructor implementation
 }
 
