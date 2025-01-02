@@ -1,4 +1,4 @@
-#include "Vistor.h"
+#include "Visitor.h"
 #include "TypeNode.h"
 
 TypeNode::TypeNode() {

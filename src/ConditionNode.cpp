@@ -1,5 +1,5 @@
 #include "ConditionNode.h"
-#include "Vistor.h"
+#include "Visitor.h"
 
 ConditionNode::ConditionNode() {
   // Constructor implementation

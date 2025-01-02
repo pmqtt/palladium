@@ -1,4 +1,4 @@
-#include "Vistor.h"
+#include "Visitor.h"
 #include "LoopNode.h"
 
 LoopNode::LoopNode() {

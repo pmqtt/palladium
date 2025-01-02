@@ -1,5 +1,6 @@
-#include "Vistor.h"
+#include "Visitor.h"
 #include "TranslationUnitNode.h"
+#include <iostream>
 
 TranslationUnitNode::TranslationUnitNode() {
   // Constructor implementation

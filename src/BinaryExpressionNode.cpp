@@ -1,5 +1,5 @@
 #include "BinaryExpressionNode.h"
-#include "Vistor.h"
+#include "Visitor.h"
 BinaryExpressionNode::BinaryExpressionNode() {
   // Constructor implementation
 }

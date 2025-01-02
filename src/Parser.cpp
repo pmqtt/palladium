@@ -12,8 +12,8 @@ Parser::Parser(const std::string& code)
   }
 }
 
-auto Parser::parse() -> AstNode {
-  AstNode translation_unit = parse_translation_unit();
+auto Parser::parse() -> ParserResult {
+  ParserResult translation_unit = parse_translation_unit();
   if (translation_unit) {
     return true;
   }
@@ -30,8 +30,8 @@ auto Parser::accept(TokenKind tk) -> bool {
   return false;
 }
 
-auto Parser::parse_translation_unit() -> AstNode {
-  AstNode node = parse_function();
+auto Parser::parse_translation_unit() -> ParserResult {
+  ParserResult node = parse_function();
 
   if (node) {
     return true;
@@ -39,16 +39,16 @@ auto Parser::parse_translation_unit() -> AstNode {
   return false;
 }
 
-auto Parser::parse_function() -> AstNode {
+auto Parser::parse_function() -> ParserResult {
   if (accept(TokenKind::FN)) {
     if (accept(TokenKind::IDENTIFIER)) {
       if (accept(TokenKind::CLAMP_OPEN)) {
         if (accept(TokenKind::CLAMP_CLOSE)) {
           if (accept(TokenKind::ARROW)) {
-            AstNode type = parse_type();
+            ParserResult type = parse_type();
             if (type) {
               if (accept(TokenKind::CURLY_OPEN)) {
-                AstNode statements = parse_statements();
+                ParserResult statements = parse_statements();
                 if (statements) {
                   if (accept(TokenKind::CURLY_CLOSE)) {
                     return true;
@@ -65,8 +65,8 @@ auto Parser::parse_function() -> AstNode {
   return false;
 }
 
-auto Parser::parse_statements() -> AstNode {
-  AstNode statement = parse_statement();
+auto Parser::parse_statements() -> ParserResult {
+  ParserResult statement = parse_statement();
   if (!statement) {
     return false;
   }
@@ -78,34 +78,34 @@ auto Parser::parse_statements() -> AstNode {
   return true;
 }
 
-auto Parser::parse_statement() -> AstNode {
-  AstNode var_declaration = parse_variable_declaration();
+auto Parser::parse_statement() -> ParserResult {
+  ParserResult var_declaration = parse_variable_declaration();
   if (var_declaration) {
     return true;
   }
-  AstNode constant_declaration = parse_constant_declaration();
+  ParserResult constant_declaration = parse_constant_declaration();
   if (constant_declaration) {
     return true;
   }
-  AstNode loop = parse_loop();
+  ParserResult loop = parse_loop();
   if (loop) {
     return true;
   }
-  AstNode return_statement = parse_return_statement();
+  ParserResult return_statement = parse_return_statement();
   if (return_statement) {
     return true;
   }
   return false;
 }
 
-auto Parser::parse_variable_declaration() -> AstNode {
+auto Parser::parse_variable_declaration() -> ParserResult {
   if (accept(TokenKind::LET)) {
     if (accept(TokenKind::IDENTIFIER)) {
       if (accept(TokenKind::COLON)) {
-        AstNode type = parse_type();
+        ParserResult type = parse_type();
         if (type) {
           if (accept(TokenKind::OP_SET)) {
-            AstNode expression = parse_expression();
+            ParserResult expression = parse_expression();
             if (expression) {
               if (accept(TokenKind::SEMICOLON)) {
                 return true;
@@ -119,14 +119,14 @@ auto Parser::parse_variable_declaration() -> AstNode {
   return false;
 }
 
-auto Parser::parse_constant_declaration() -> AstNode {
+auto Parser::parse_constant_declaration() -> ParserResult {
   if (accept(TokenKind::CONST)) {
     if (accept(TokenKind::IDENTIFIER)) {
       if (accept(TokenKind::COLON)) {
-        AstNode type = parse_type();
+        ParserResult type = parse_type();
         if (type) {
           if (accept(TokenKind::OP_SET)) {
-            AstNode expression = parse_expression();
+            ParserResult expression = parse_expression();
             if (expression) {
               if (accept(TokenKind::SEMICOLON)) {
                 return true;
@@ -140,14 +140,14 @@ auto Parser::parse_constant_declaration() -> AstNode {
   return false;
 }
 
-auto Parser::parse_loop() -> AstNode {
+auto Parser::parse_loop() -> ParserResult {
   if (accept(TokenKind::WHILE)) {
     if (accept(TokenKind::CLAMP_OPEN)) {
-      AstNode condition = parse_condition();
+      ParserResult condition = parse_condition();
       if (condition) {
         if (accept(TokenKind::CLAMP_CLOSE)) {
           if (accept(TokenKind::CURLY_OPEN)) {
-            AstNode statements = parse_statements();
+            ParserResult statements = parse_statements();
             if (statements) {
               if (accept(TokenKind::CURLY_CLOSE)) {
                 return true;
@@ -161,9 +161,9 @@ auto Parser::parse_loop() -> AstNode {
   return false;
 }
 
-auto Parser::parse_return_statement() -> AstNode {
+auto Parser::parse_return_statement() -> ParserResult {
   if (accept(TokenKind::RETURN)) {
-    AstNode expression = parse_expression();
+    ParserResult expression = parse_expression();
     if (expression) {
       if (accept(TokenKind::SEMICOLON)) {
         return true;
@@ -173,7 +173,7 @@ auto Parser::parse_return_statement() -> AstNode {
   return false;
 }
 
-auto Parser::parse_expression() -> AstNode {
+auto Parser::parse_expression() -> ParserResult {
   if (accept(TokenKind::DOUBLE)) {
     return true;
   }
@@ -183,11 +183,11 @@ auto Parser::parse_expression() -> AstNode {
   if (accept(TokenKind::TEXT)) {
     return true;
   }
-  AstNode array_initialization = parse_array_initialization();
+  ParserResult array_initialization = parse_array_initialization();
   if (array_initialization) {
     return true;
   }
-  AstNode binary_expression = parse_binary_expression();
+  ParserResult binary_expression = parse_binary_expression();
   if (binary_expression) {
     return true;
   }
@@ -195,12 +195,12 @@ auto Parser::parse_expression() -> AstNode {
   return false;
 }
 
-auto Parser::parse_array_initialization() -> AstNode {
+auto Parser::parse_array_initialization() -> ParserResult {
   if (accept(TokenKind::EDGE_CLAMP_OPEN)) {
-    AstNode expression_left = parse_expression();
+    ParserResult expression_left = parse_expression();
     if (expression_left) {
       if (accept(TokenKind::SEMICOLON)) {
-        AstNode expression_right = parse_expression();
+        ParserResult expression_right = parse_expression();
         if (expression_right) {
           if (accept(TokenKind::EDGE_CLAMP_CLOSE)) {
             return true;
@@ -212,11 +212,11 @@ auto Parser::parse_array_initialization() -> AstNode {
   return false;
 }
 
-auto Parser::parse_binary_expression() -> AstNode {
+auto Parser::parse_binary_expression() -> ParserResult {
   if (accept(TokenKind::IDENTIFIER)) {
-    AstNode op = parse_operator();
+    ParserResult op = parse_operator();
     if (op) {
-      AstNode expression = parse_expression();
+      ParserResult expression = parse_expression();
       if (expression) {
         return true;
       }
@@ -225,15 +225,15 @@ auto Parser::parse_binary_expression() -> AstNode {
   return false;
 }
 
-auto Parser::parse_condition() -> AstNode {
-  AstNode bin_op = parse_binary_expression();
+auto Parser::parse_condition() -> ParserResult {
+  ParserResult bin_op = parse_binary_expression();
   if (bin_op) {
     return true;
   }
   return false;
 }
 
-auto Parser::parse_operator() -> AstNode {
+auto Parser::parse_operator() -> ParserResult {
   if (accept(TokenKind::OP_LS)) {
     return true;
   }
@@ -246,7 +246,7 @@ auto Parser::parse_operator() -> AstNode {
   return false;
 }
 
-auto Parser::parse_type() -> AstNode {
+auto Parser::parse_type() -> ParserResult {
   if (accept(TokenKind::I32)) {
     return true;
   }

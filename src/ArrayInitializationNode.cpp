@@ -1,5 +1,5 @@
 #include "ArrayInitializationNode.h"
-#include "Vistor.h"
+#include "Visitor.h"
 
 ArrayInitializationNode::ArrayInitializationNode() {
   // Constructor implementation

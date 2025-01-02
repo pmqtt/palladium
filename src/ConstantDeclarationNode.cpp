@@ -1,5 +1,5 @@
 #include "ConstantDeclarationNode.h"
-#include "Vistor.h"
+#include "Visitor.h"
 
 ConstantDeclarationNode::ConstantDeclarationNode() {
   // Constructor implementation
