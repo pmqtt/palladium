@@ -1049,3 +1049,5 @@ dkms.conf
 tests/LexerTest
 tests/TokenKindTest
 tests/VMMemoryTest
+tests/ParserTest
+tests/VisitorTest
