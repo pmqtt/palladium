@@ -1,12 +1,38 @@
 #ifndef PALLADIUM_PARSER_H
 #define PALLADIUM_PARSER_H
-#include <optional>
 #include "AstNode.h"
 #include "Lexer.h"
 #include "Util.h"
 #include <string>
+#include <stack>
+
+auto missing(TokenKind kind) -> Error;
 
 using ParserResult = ResultOr<AstPtr>;
+static const ParserResult Epsilon(nullptr);
+
+auto is_produced(const ParserResult& res) -> bool;
+enum class RuleType {
+  TRANSLATION_UNIT,
+  FUNCTION,
+  BLOCK,
+  STATEMENT,
+  VAR_DEC,
+  CONST_DEC,
+  LOOP,
+  RETURN_STATEMENT,
+  EXPRESSION,
+  ARRAY_INIT,
+  BIN_OP,
+  CONDITION,
+  OPERATOR,
+  TYPE
+};
+
+struct Context {
+  std::string context; // function name, if, while, expression ...
+  RuleType rule;
+};
 
 class Parser {
 public:
@@ -36,6 +62,7 @@ private:
   Lexer _lexer;
   Token _current_token;
   Token _last_token;
+  std::stack<Context> _context;
 };
 
 #endif

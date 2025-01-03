@@ -9,5 +9,6 @@ SIMPLE_TEST_CASE(ParserSimpleTest1) {
 
 SIMPLE_TEST_CASE(ParserSimpleTest_Failed_1) {
   Parser p("fn main() -> i32 { return 0 }");
-  REQUIRE(p.parse().ok() == false);
+  auto res = p.parse();
+  REQUIRE(res.ok() == false);
 }
