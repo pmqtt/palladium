@@ -2,7 +2,6 @@
 #define PALLADIUM_CONDITIONNODE_H
 
 #include <memory>
-#include <string>
 #include "AstNode.h"
 
 class ConditionNode : public AstNode, public std::enable_shared_from_this<ConditionNode> {

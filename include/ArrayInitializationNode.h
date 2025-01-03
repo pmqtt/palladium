@@ -2,7 +2,6 @@
 #define PALLADIUM_ARRAYINITIALIZATIONNODE_H
 
 #include <memory>
-#include <string>
 #include "AstNode.h"
 
 class ArrayInitializationNode : public AstNode, public std::enable_shared_from_this<ArrayInitializationNode> {
