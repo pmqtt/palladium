@@ -1,39 +1,19 @@
 #include "purge.hpp"
+#include <memory>
+#include "Codegeneration.h"
 #include "Parser.h"
-#include "Visitor.h"
-#include "TranslationUnitNode.h"
+#include "VMType.h"
 
-class TestVisitor : public Visitor{
-  public:
-  TestVisitor(): count(0) {}
-  
-  auto begin(const std::shared_ptr<TranslationUnitNode> & node)->VisitResult override{
-    UNUSED(node);
-    count++;
-    return true;
-  }
- 
-  auto visit(const std::shared_ptr<TranslationUnitNode> & node)->std::shared_ptr<Visitor> override{
-    UNUSED(node);
-    count++;
-    return shared_from_this();
-  }
-
-  auto end(const std::shared_ptr<TranslationUnitNode> & node)->VisitResult override {
-    UNUSED(node);
-    count++;
-    return true;
-  }
-  using Visitor::begin;
-  using Visitor::end;
-  using Visitor::visit;
-
-  int count;
-};
-
-
+using VM = VirtualMachine<AggresivPolicy>;
 PURGE_MAIN
 
-SIMPLE_TEST_CASE(SimpleCallTest) {
-  // only compile test
+SIMPLE_TEST_CASE(TEST_1) {
+  Parser p("fn main() -> i32 { return 22; }");
+  auto res = p.parse();
+  auto visitor = std::make_shared<TranslationUnitVisitor>();
+  res.result()->accept(visitor);
+  VMPtr vm = visitor->vm();
+  REQUIRE(vm->function_entry("main").name() == "main");
+  vm->run();
+  REQUIRE(std::get<VMPrimitive>(vm->stack_top()) == VMPrimitive(22));
 }

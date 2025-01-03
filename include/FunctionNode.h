@@ -11,6 +11,11 @@ public:
   FunctionNode(const std::string& fname, const AstPtr& returnType, const AstPtr& statements);
   void accept(const std::shared_ptr<Visitor>& v) override;
 
+public:
+  auto function_name() const -> const std::string& {
+    return _fname;
+  }
+
 private:
   std::string _fname;
   AstPtr _returnType;

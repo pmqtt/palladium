@@ -15,6 +15,14 @@ public:
   }
   void accept(const std::shared_ptr<Visitor>& v) override;
 
+  auto kind() const -> ExpressionKind {
+    return _kind;
+  }
+
+  auto constante() const -> const std::string& {
+    return _constante;
+  }
+
 private:
   std::string _constante;
   AstPtr _exp;

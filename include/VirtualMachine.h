@@ -72,6 +72,11 @@ public:
   static auto make(const std::vector<InstructionTypeV>& program) -> VirtualMachine<P> {
     return VirtualMachine<P>(program);
   }
+
+  VirtualMachine(std::size_t mem_size = 1024 * 1024 * 1024)
+      : _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1), _memory(mem_size) {
+  }
+
   VirtualMachine(const std::vector<InstructionTypeV>& program, std::size_t mem_size = 1024 * 1024 * 1024)
       : _program(program), _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1), _memory(mem_size) {
   }
@@ -88,6 +93,10 @@ public:
       }
     }
     panic("function " + fname + " not exist");
+  }
+
+  void add_program(const std::vector<InstructionTypeV>& program) {
+    _program = program;
   }
 
   void add_native_function(const std::string fname, const NativeFunction<VirtualMachine<POLICY>>& code,
@@ -110,6 +119,7 @@ public:
       old_pc = _pc;
       std::visit(
           [&](auto& instruction) {
+            std::cout << "STEP" << std::endl;
             InstructionResult res = instruction.execute(this);
             res.error([](const Error& err) {
               std::cerr << "Instruction failed: " << err.msg() << "\n";
@@ -214,7 +224,6 @@ public:
     std::cout << _memory;
   }
 
-private:
   void print_registers() {
     std::cout << "Registers:\n";
     for (std::size_t i = 0; i < _registers.size(); ++i) {
@@ -224,6 +233,13 @@ private:
     }
   }
   void print_stack() {
+    std::cout << "Stack:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    for (const auto& x : _stack) {
+      std::cout << "\t" << to_string(x).result_or("---");
+      std::cout << std::endl;
+      ;
+    }
   }
 
 private:
