@@ -577,6 +577,75 @@ template <class VM> struct ReadMem : public Instruction<VM> {
 private:
 };
 
+// Division operation for the VM
+
+// c(0) = c(0) / c(i), handles division by zero
+template <class VM> struct Div : public Instruction<VM> {
+  Div(std::size_t i) : _i(i) {}
+
+  auto execute(VM* vm) -> InstructionResult override {
+    VM::P::print_dbg("Div " + std::to_string(_i));
+    auto& registers = vm->registers();
+
+    // Check if the divisor is zero
+    if (is_vm_type<int>(registers[_i])) {
+      int divisor = vm_type_get<int>(registers[_i]);
+      if (divisor == 0) {
+        return err("Division by zero error in register reg(" + std::to_string(_i) + ")");
+      }
+      
+      // Perform integer division
+      auto res = divide(registers[0], registers[_i]);
+      if (res.ok()) {
+        registers[0] = res.result();
+        vm->inc_pc();
+        return true;
+      }
+      return res.error_value();
+    }
+    return err("Expected int type in register reg(" + std::to_string(_i) + ") for division");
+  }
+
+private:
+  std::size_t _i;
+};
+
+// c(0) = c(0) * c(i)
+template <class VM> struct Mult : public Instruction<VM> {
+  Mult(std::size_t i) : _i(i) {
+  }
+
+  auto execute(VM* vm) -> InstructionResult override {
+    VM::P::print_dbg("Mult " + std::to_string(_i));
+    auto& registers = vm->registers();
+
+    auto res = multiply(registers[0], registers[_i]);
+    if (res.ok()) {
+      registers[0] = res.result();
+      vm->inc_pc();
+      return true;
+    }
+    return res.error_value();
+  }
+
+private:
+  std::size_t _i;
+
+  static auto multiply(const VMType& lhs, const VMType& rhs) -> ResultOr<VMType> {
+    if (is_vm_type<int>(lhs) && is_vm_type<int>(rhs)) {
+      return vm_type_get<int>(lhs) * vm_type_get<int>(rhs);
+    }
+    if (is_vm_type<double>(lhs) && is_vm_type<double>(rhs)) {
+      return vm_type_get<double>(lhs) * vm_type_get<double>(rhs);
+    }
+    if (is_vm_type<float>(lhs) && is_vm_type<float>(rhs)) {
+      return vm_type_get<float>(lhs) * vm_type_get<float>(rhs);
+    }
+    return err("Multiplication unsupported for given VMTypes");
+  }
+};
+
+
 template <class VM>
 using InstructionType =
     std::variant<Load<VM>, CLoad<VM>, INDLoad<VM>, SLoad<VM>, Store<VM>, INDStore<VM>, Add<VM>, CAdd<VM>, INDAdd<VM>,
