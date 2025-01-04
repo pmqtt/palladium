@@ -16,6 +16,7 @@
 #include "TranslationUnitNode.h"
 #include "TypeNode.h"
 #include "VariableDeclarationNode.h"
+#include "FunctionNode.h"
 
 auto missing(TokenKind kind) -> Error {
   return err("Missing " + detail::to_string(kind));
@@ -56,19 +57,30 @@ auto Parser::accept(TokenKind tk) -> bool {
   }
   return false;
 }
-
+// translation_unit := (function)*
 auto Parser::parse_translation_unit() -> ParserResult {
   _context.push({.context = "tranlsation unit", .rule = RuleType::TRANSLATION_UNIT});
   ParserResult node = parse_function();
-  if (node) {
-    return {std::make_shared<TranslationUnitNode>(node.result())};
+  if (!node.ok()) {
+    return node.error_value();
   }
-  return node.error_value();
+  std::vector<AstPtr> nodes;
+  while (is_produced(node)) {
+    nodes.push_back(node.result());
+    node = parse_function();
+    if (!node.ok()) {
+      return node.error_value();
+    }
+    if (!node.result()) {
+      break;
+    }
+  }
+  return {std::make_shared<TranslationUnitNode>(nodes)};
 }
 // function ::= "fn" identifier "(" ")" "->" type "{" statements "}"
 auto Parser::parse_function() -> ParserResult {
   if (!accept(TokenKind::FN)) {
-    return missing(TokenKind::FN);
+    return Epsilon;
   }
   if (!accept(TokenKind::IDENTIFIER)) {
     return missing(TokenKind::IDENTIFIER);

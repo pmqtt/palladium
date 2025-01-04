@@ -3,18 +3,16 @@
 
 #include <memory>
 #include "AstNode.h"
-#include "FunctionNode.h"
-
-class FunctionNode;
+#include <vector>
 
 class TranslationUnitNode : public AstNode, public std::enable_shared_from_this<TranslationUnitNode> {
 public:
   ~TranslationUnitNode() = default;
-  TranslationUnitNode(const AstPtr& fnode);
+  TranslationUnitNode(const std::vector<AstPtr>& nodes);
   void accept(const std::shared_ptr<Visitor>& v) override;
 
 private:
-  AstPtr _fnode;
+  std::vector<AstPtr> _nodes;
 };
 
 #endif // TRANSLATIONUNITNODE_H
