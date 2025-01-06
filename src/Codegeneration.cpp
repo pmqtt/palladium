@@ -74,11 +74,9 @@ auto StatementVisitor::begin(const std::shared_ptr<StatementNode>& node) -> Visi
 auto StatementVisitor::visit(const std::shared_ptr<StatementNode>& node) -> std::shared_ptr<Visitor> {
   switch (node->statement_type()) {
   case StatementType::RETURN_STATEMENT:
-    std::cout << "STATEMENT RET" << std::endl;
     _return_statement_visitor = std::make_shared<ReturnStatementVisitor>(_local_variables);
     return _return_statement_visitor;
   case StatementType::VAR_DEC:
-    std::cout << "VAR DEC" << std::endl;
     _var_dec_visitor = std::make_shared<VariableDeclarationVisitor>(_local_variables);
     return _var_dec_visitor;
   default:
@@ -86,11 +84,7 @@ auto StatementVisitor::visit(const std::shared_ptr<StatementNode>& node) -> std:
   }
 }
 auto StatementVisitor::end(const std::shared_ptr<StatementNode>& node) -> VisitResult {
-  if (node->statement_type() == StatementType::VAR_DEC) {
-    std::cout << "VAR_DECLARATION" << std::endl;
-  }
   if (node->statement_type() == StatementType::RETURN_STATEMENT) {
-    std::cout << "RETURN_STATEMENT" << std::endl;
     _code.insert(_code.end(), _return_statement_visitor->code().begin(), _return_statement_visitor->code().end());
   }
   return true;
