@@ -6,7 +6,7 @@ The following code is a first draft to demonstrate basic language constructs suc
 fn main() -> i64 {
   let index : i64 = 0;
   const b : string = "Hallo World";
-  let ar: [i64; index] = [0; 11]; // An array of size 11, initialized with zeros
+  let ar: [i64; 11] = [0]; // An array of size 11, initialized with zeros
 
   while( index < 11){
     ar[index] = index * 2; // Example: storing double the index value
