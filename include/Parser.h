@@ -1,6 +1,6 @@
 #ifndef PALLADIUM_PARSER_H
 #define PALLADIUM_PARSER_H
-#include "AstNode.h"
+#include "ast/AstNode.h"
 #include "Lexer.h"
 #include "Util.h"
 #include <string>

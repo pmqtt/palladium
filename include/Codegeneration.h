@@ -1,8 +1,8 @@
 #ifndef PALLADIUM_CODEGENERATION_H
 #define PALLADIUM_CODEGENERATION_H
 #include <memory>
-#include "FunctionNode.h"
-#include "StatementsNode.h"
+#include "ast/FunctionNode.h"
+#include "ast/StatementsNode.h"
 #include "VMPolicy.h"
 #include "Visitor.h"
 #include "VirtualMachine.h"

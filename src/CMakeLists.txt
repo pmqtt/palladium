@@ -11,7 +11,7 @@ if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
   target_link_libraries(OBJECT_LIB -fsanitize=address)
 endif()
 
-target_include_directories(OBJECT_LIB PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(OBJECT_LIB PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/ast)
 
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE
     main.cpp
