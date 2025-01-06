@@ -119,7 +119,6 @@ public:
       old_pc = _pc;
       std::visit(
           [&](auto& instruction) {
-            std::cout << "STEP" << std::endl;
             InstructionResult res = instruction.execute(this);
             res.error([](const Error& err) {
               std::cerr << "Instruction failed: " << err.msg() << "\n";

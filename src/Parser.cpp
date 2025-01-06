@@ -130,7 +130,6 @@ auto Parser::parse_statements() -> ParserResult {
     if (!statement.result()) {
       break; // Epsiolon production
     }
-    statements.push_back(statement.result());
   }
   _context.pop();
   return {std::make_shared<StatementsNode>(statements)};
