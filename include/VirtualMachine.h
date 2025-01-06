@@ -242,6 +242,14 @@ public:
     }
   }
 
+  auto to_string() const -> std::string {
+    std::string ss;
+    for (auto& inst : _program) {
+      std::visit([&](auto& instruction) { ss += instruction.to_string() + "\n"; }, inst);
+    }
+    return ss;
+  }
+
 private:
   std::vector<InstructionTypeV> _program;
   std::vector<VMType> _registers;

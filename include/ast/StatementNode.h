@@ -16,6 +16,9 @@ public:
   ~StatementNode() = default;
   StatementNode(const AstPtr& statement, StatementType type);
   void accept(const std::shared_ptr<Visitor>& v) override;
+  auto statement_type() const -> StatementType {
+    return _statementType;
+  }
 
 private:
   AstPtr _statement;

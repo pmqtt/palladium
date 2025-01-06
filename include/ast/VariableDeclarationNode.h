@@ -10,6 +10,12 @@ public:
   ~VariableDeclarationNode() = default;
   VariableDeclarationNode(const std::string& var_name, const AstPtr& expression);
   void accept(const std::shared_ptr<Visitor>& v) override;
+  auto var_name() const -> const std::string& {
+    return _var_name;
+  }
+  auto expression() const -> AstPtr {
+    return _expression;
+  }
 
 private:
   std::string _var_name;

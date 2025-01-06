@@ -18,6 +18,7 @@ template <class VM> struct Instruction {
   Instruction() = default;
   virtual ~Instruction() = default;
   virtual InstructionResult execute(VM* vm) = 0;
+  virtual auto to_string() const -> std::string = 0;
 };
 
 // c(0) = c(i)
@@ -33,6 +34,9 @@ template <class VM> struct Load : public Instruction<VM> {
     vm->inc_pc();
     return true;
   }
+  auto to_string() const -> std::string override {
+    return "Load " + std::to_string(_i);
+  }
 
 private:
   std::size_t _i;
@@ -44,11 +48,15 @@ template <class VM> struct CLoad : public Instruction<VM> {
   }
 
   auto execute(VM* vm) -> InstructionResult override {
-    VM::P::print_dbg("CLoad " + to_string(_value));
+    VM::P::print_dbg("CLoad " + ::to_string(_value));
     auto& registers = vm->registers();
     registers[0] = _value;
     vm->inc_pc();
     return true;
+  }
+
+  auto to_string() const -> std::string override {
+    return "CLoad " + ::to_string(_value);
   }
 
 private:
@@ -72,6 +80,9 @@ template <class VM> struct INDLoad : public Instruction<VM> {
     vm->inc_pc();
     return true;
   }
+  auto to_string() const -> std::string override {
+    return "IndLoad " + std::to_string(_i);
+  }
 
 private:
   std::size_t _i;
@@ -93,6 +104,10 @@ template <class VM> struct SLoad : public Instruction<VM> {
     return true;
   }
 
+  auto to_string() const -> std::string override {
+    return "SLoad " + std::to_string(_i);
+  }
+
 private:
   std::size_t _i;
 };
@@ -108,6 +123,10 @@ template <class VM> struct Store : public Instruction<VM> {
     registers[_i] = registers[0];
     vm->inc_pc();
     return true;
+  }
+
+  auto to_string() const -> std::string override {
+    return "Store " + std::to_string(_i);
   }
 
 private:
@@ -128,6 +147,10 @@ template <class VM> struct INDStore : public Instruction<VM> {
       vm->inc_pc();
     }
     return err("expected int in register reg(" + std::to_string(_i) + ")");
+  }
+
+  auto to_string() const -> std::string override {
+    return "IndStore " + std::to_string(_i);
   }
 
 private:
@@ -152,6 +175,10 @@ template <class VM> struct Add : public Instruction<VM> {
     return res.error_value();
   }
 
+  auto to_string() const -> std::string override {
+    return "Add " + std::to_string(_i);
+  }
+
 private:
   std::size_t _i;
 };
@@ -162,7 +189,7 @@ template <class VM> struct CAdd : public Instruction<VM> {
   }
 
   auto execute(VM* vm) -> InstructionResult override {
-    VM::P::print_dbg("CAdd " + to_string(_i));
+    VM::P::print_dbg("CAdd " + ::to_string(_i));
     auto& registers = vm->registers();
     auto res = add(registers[0], _i);
     if (res.ok()) {
@@ -171,6 +198,10 @@ template <class VM> struct CAdd : public Instruction<VM> {
       return true;
     }
     return res.error_value();
+  }
+
+  auto to_string() const -> std::string override {
+    return "CAdd " + ::to_string(_i).result_or("Unknown");
   }
 
 private:
@@ -198,6 +229,10 @@ template <class VM> struct INDAdd : public Instruction<VM> {
     return err("expected int in register reg(" + std::to_string(_i) + ")");
   }
 
+  auto to_string() const -> std::string override {
+    return "INDAdd " + std::to_string(_i);
+  }
+
 private:
   std::size_t _i;
 };
@@ -209,7 +244,7 @@ template <class VM> struct If : public Instruction<VM> {
   }
 
   auto execute(VM* vm) -> InstructionResult override {
-    VM::P::print_dbg("if c(0) op(" + std::to_string(_cond) + ") v: " + to_string(_value).result() +
+    VM::P::print_dbg("if c(0) op(" + std::to_string(_cond) + ") v: " + ::to_string(_value).result() +
                      " jmp: " + std::to_string(_target));
     auto& registers = vm->registers();
     auto register_value = std::get<VMPrimitive>(registers[0]);
@@ -244,6 +279,10 @@ template <class VM> struct If : public Instruction<VM> {
     return true;
   }
 
+  auto to_string() const -> std::string override {
+    return "If " + std::to_string(_cond) + ::to_string(_value).result_or("Unknown") + std::to_string(_target);
+  }
+
 private:
   int _cond;
   VMType _value;
@@ -260,6 +299,10 @@ template <class VM> struct Goto : public Instruction<VM> {
     return true;
   }
 
+  auto to_string() const -> std::string override {
+    return "Goto " + std::to_string(_i);
+  }
+
 private:
   std::size_t _i;
 };
@@ -272,6 +315,10 @@ template <class VM> struct Halt : public Instruction<VM> {
     UNUSED(vm);
     return true;
   }
+
+  auto to_string() const -> std::string override {
+    return "Halt ";
+  }
 };
 
 template <class VM> struct Push : public Instruction<VM> {
@@ -279,10 +326,14 @@ template <class VM> struct Push : public Instruction<VM> {
   }
 
   auto execute(VM* vm) -> InstructionResult override {
-    VM::P::print_dbg("Push " + to_string(_value).result_or(""));
+    VM::P::print_dbg("Push " + ::to_string(_value).result_or(""));
     vm->stack_push(_value);
     vm->inc_pc();
     return true;
+  }
+
+  auto to_string() const -> std::string override {
+    return "Push " + ::to_string(_value).result_or("Unknown");
   }
 
 private:
@@ -298,6 +349,9 @@ template <class VM> struct Pop : public Instruction<VM> {
     vm->inc_pc();
     return true;
   }
+  auto to_string() const -> std::string override {
+    return "Pop ";
+  }
 };
 
 // print top of stack
@@ -308,7 +362,7 @@ template <class VM> struct Print : public Instruction<VM> {
     VM::P::print_dbg("Print ");
     auto v = vm->stack_top();
     vm->stack_pop();
-    auto res = to_string(v);
+    auto res = ::to_string(v);
     if (res.ok()) {
       std::cout << res.result();
       std::flush(std::cout);
@@ -316,6 +370,10 @@ template <class VM> struct Print : public Instruction<VM> {
       return true;
     }
     return res.error_value();
+  }
+
+  auto to_string() const -> std::string override {
+    return "Print ";
   }
 };
 
@@ -327,7 +385,7 @@ template <class VM> struct PrintRegStructField : public Instruction<VM> {
     VM::P::print_dbg("PrintRegStructField " + std::to_string(_i) + " " + std::to_string(_adr));
     auto& v = std::get<VMStruct>(vm->registers()[_i]).get_field(_adr);
     VMType field_value = std::get<VMPrimitive>(v);
-    auto res = to_string(field_value);
+    auto res = ::to_string(field_value);
     if (res.ok()) {
       std::cout << res.result();
       std::flush(std::cout);
@@ -335,6 +393,10 @@ template <class VM> struct PrintRegStructField : public Instruction<VM> {
       return true;
     }
     return res.error_value();
+  }
+
+  auto to_string() const -> std::string override {
+    return "PrintRegStructField " + std::to_string(_i) + " " + std::to_string(_adr);
   }
 
 private:
@@ -364,6 +426,10 @@ template <class VM> struct Call : public Instruction<VM> {
     return true;
   }
 
+  auto to_string() const -> std::string override {
+    return "Call " + vm_type_get<std::string>(_fname).result_or("Unknown");
+  }
+
 private:
   VMType _fname;
 };
@@ -391,6 +457,10 @@ template <class VM> struct CallNative : public Instruction<VM> {
     return true;
   }
 
+  auto to_string() const -> std::string override {
+    return "CallNative " + vm_type_get<std::string>(_fname).result_or("Unknown");
+  }
+
 private:
   VMType _fname;
 };
@@ -401,6 +471,10 @@ template <class VM> struct RetVoid : public Instruction<VM> {
   auto execute(VM* vm) -> InstructionResult override {
     vm->restore_from_call_stack();
     return true;
+  }
+
+  auto to_string() const -> std::string override {
+    return "RetVoid";
   }
 };
 
@@ -416,6 +490,10 @@ template <class VM> struct Return : public Instruction<VM> {
     return true;
   }
 
+  auto to_string() const -> std::string override {
+    return "Return " + std::to_string(_i);
+  }
+
 public:
   std::size_t _i;
 };
@@ -425,10 +503,13 @@ template <class VM> struct StructCreate : public Instruction<VM> {
   }
 
   auto execute(VM* vm) -> InstructionResult override {
-    VM::P::print_dbg("PrintRegStructField " + std::to_string(_i) + " " + std::to_string(_sz));
+    VM::P::print_dbg("StructCreate " + std::to_string(_i) + " " + std::to_string(_sz));
     vm->registers()[_i] = VMStruct(_sz);
     vm->inc_pc();
     return true;
+  }
+  auto to_string() const -> std::string override {
+    return "StructCreate " + std::to_string(_i) + " " + std::to_string(_sz);
   }
 
 private:
@@ -441,11 +522,13 @@ template <class VM> struct AddField : public Instruction<VM> {
   }
 
   auto execute(VM* vm) -> InstructionResult override {
-    VM::P::print_dbg("AddField " + to_string(_type).result_or(""));
     auto& s = std::get<VMStruct>(vm->registers()[_i]);
     s.add_field(_type);
     vm->inc_pc();
     return true;
+  }
+  auto to_string() const -> std::string override {
+    return "AddField ";
   }
 
 private:
@@ -463,6 +546,10 @@ template <class VM> struct SetField : public Instruction<VM> {
     s.set_field(_field_adr, _type);
     vm->inc_pc();
     return true;
+  }
+
+  auto to_string() const -> std::string override {
+    return "SetField " + std::to_string(_i) + " " + std::to_string(_field_adr);
   }
 
 private:
@@ -483,6 +570,10 @@ template <class VM> struct Allocate : public Instruction<VM> {
     return true;
   }
 
+  auto to_string() const -> std::string override {
+    return "Allocate " + std::to_string(_size);
+  }
+
 private:
   std::size_t _size;
 };
@@ -497,6 +588,10 @@ template <class VM> struct Deallocate : public Instruction<VM> {
     vm->deallocate(adr);
     vm->inc_pc();
     return true;
+  }
+
+  auto to_string() const -> std::string override {
+    return "Deallocate";
   }
 };
 
@@ -514,6 +609,9 @@ template <class VM> struct WriteMem : public Instruction<VM> {
     }
     vm->inc_pc();
     return true;
+  }
+  auto to_string() const -> std::string override {
+    return "WriteMem";
   }
 };
 
@@ -572,6 +670,9 @@ template <class VM> struct ReadMem : public Instruction<VM> {
     vm->stack_push(result);
     vm->inc_pc();
     return true;
+  }
+  auto to_string() const -> std::string override {
+    return "ReadMem";
   }
 
 private:

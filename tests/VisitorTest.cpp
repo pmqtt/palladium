@@ -8,7 +8,7 @@ using VM = VirtualMachine<AggresivPolicy>;
 PURGE_MAIN
 
 SIMPLE_TEST_CASE(TEST_1) {
-  Parser p("fn main() -> i32 { return 22; }");
+  Parser p("fn main() -> i32 { let a: i32 = 2; return 22; }");
   auto res = p.parse();
   auto visitor = std::make_shared<TranslationUnitVisitor>();
   res.result()->accept(visitor);
@@ -16,4 +16,5 @@ SIMPLE_TEST_CASE(TEST_1) {
   REQUIRE(vm->function_entry("main").name() == "main");
   vm->run();
   REQUIRE(std::get<VMPrimitive>(vm->stack_top()) == VMPrimitive(22));
+  std::cout << vm->to_string() << std::endl;
 }
