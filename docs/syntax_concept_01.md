@@ -9,7 +9,7 @@ fn main() -> i64 {
   let ar: [i64; index] = [0; 11]; // An array of size 11, initialized with zeros
 
   while( index < 11){
-    ar[index as usize] = index * 2; // Example: storing double the index value
+    ar[index] = index * 2; // Example: storing double the index value
     index += 1;
   }
   return 0;
@@ -21,7 +21,7 @@ fn main() -> i64 {
 1. **Function `main`**: The main function returns a value of type `i64`, indicating a clear return type definition.
 2. **Variable `index`**: Initialized with the value `0`. The type `i64` suggests an integer variable with a large range.
 3. **Constant `b`**: Holds the string "Hallo World". This defines a constant value that cannot be changed.
-4. **Array `ar`**: A fixed-size array of size `index`, initialized with zeros. This demonstrates dynamic array sizing and indexing.
+4. **Array `ar`**: A fixed-size array of size `11`, initialized with zeros.
 5. **Loop**: A simple `while` loop that runs until `index` reaches the value `11`, updating the array `ar` with calculated values.
 6. **Return Value**: The function ends with a return value of `0`, which typically indicates successful execution.
 
