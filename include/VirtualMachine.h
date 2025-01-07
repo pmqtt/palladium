@@ -211,6 +211,10 @@ public:
     }
   }
 
+  void store_on_stack(std::size_t adr, const VMType& value) {
+    _stack[adr] = value;
+  }
+
   auto allocate(std::size_t size) -> VMAddress {
     return VMAddress{_memory.allocate(size)};
   }
@@ -227,7 +231,7 @@ public:
     std::cout << "Registers:\n";
     for (std::size_t i = 0; i < _registers.size(); ++i) {
       std::cout << "  R[" << i << "]: ";
-      std::cout << to_string(_registers[i]).result_or("");
+      std::cout << ::to_string(_registers[i]).result_or("");
       std::cout << "\n";
     }
   }
@@ -235,7 +239,7 @@ public:
     std::cout << "Stack:" << std::endl;
     std::cout << "----------------------" << std::endl;
     for (const auto& x : _stack) {
-      std::cout << "\t" << to_string(x).result_or("---");
+      std::cout << "\t" << ::to_string(x).result_or("---");
       std::cout << std::endl;
       ;
     }

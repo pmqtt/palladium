@@ -48,7 +48,7 @@ template <class VM> struct CLoad : public Instruction<VM> {
   }
 
   auto execute(VM* vm) -> InstructionResult override {
-    VM::P::print_dbg("CLoad " + ::to_string(_value));
+    VM::P::print_dbg("CLoad " + ::to_string(_value).result_or("Unknown"));
     auto& registers = vm->registers();
     registers[0] = _value;
     vm->inc_pc();
@@ -56,7 +56,7 @@ template <class VM> struct CLoad : public Instruction<VM> {
   }
 
   auto to_string() const -> std::string override {
-    return "CLoad " + ::to_string(_value);
+    return "CLoad " + ::to_string(_value).result_or("Unknown");
   }
 
 private:
@@ -189,7 +189,7 @@ template <class VM> struct CAdd : public Instruction<VM> {
   }
 
   auto execute(VM* vm) -> InstructionResult override {
-    VM::P::print_dbg("CAdd " + ::to_string(_i));
+    VM::P::print_dbg("CAdd " + ::to_string(_i).result_or("Unknown"));
     auto& registers = vm->registers();
     auto res = add(registers[0], _i);
     if (res.ok()) {
@@ -244,7 +244,7 @@ template <class VM> struct If : public Instruction<VM> {
   }
 
   auto execute(VM* vm) -> InstructionResult override {
-    VM::P::print_dbg("if c(0) op(" + std::to_string(_cond) + ") v: " + ::to_string(_value).result() +
+    VM::P::print_dbg("if c(0) op(" + std::to_string(_cond) + ") v: " + ::to_string(_value).result_or("Unknown") +
                      " jmp: " + std::to_string(_target));
     auto& registers = vm->registers();
     auto register_value = std::get<VMPrimitive>(registers[0]);
@@ -326,7 +326,7 @@ template <class VM> struct Push : public Instruction<VM> {
   }
 
   auto execute(VM* vm) -> InstructionResult override {
-    VM::P::print_dbg("Push " + ::to_string(_value).result_or(""));
+    VM::P::print_dbg("Push " + ::to_string(_value).result_or("Unknown"));
     vm->stack_push(_value);
     vm->inc_pc();
     return true;
@@ -678,10 +678,29 @@ template <class VM> struct ReadMem : public Instruction<VM> {
 private:
 };
 
+// stack[stack_adr] = c(reg_adr)
+template <class VM> struct Mov : public Instruction<VM> {
+  Mov(std::size_t stack_adr, std::size_t reg_adr) : _stack_adr(stack_adr), _reg_adr(reg_adr) {
+  }
+
+  auto to_string() const -> std::string override {
+    return "Mov " + std::to_string(_stack_adr) + " " + std::to_string(_reg_adr);
+  }
+  auto execute(VM* vm) -> InstructionResult override {
+    vm->store_on_stack(_stack_adr, vm->registers()[_reg_adr]);
+    vm->inc_pc();
+    return true;
+  }
+
+private:
+  std::size_t _stack_adr;
+  std::size_t _reg_adr;
+};
+
 template <class VM>
 using InstructionType =
     std::variant<Load<VM>, CLoad<VM>, INDLoad<VM>, SLoad<VM>, Store<VM>, INDStore<VM>, Add<VM>, CAdd<VM>, INDAdd<VM>,
                  If<VM>, Goto<VM>, Halt<VM>, Push<VM>, Pop<VM>, Print<VM>, PrintRegStructField<VM>, Call<VM>,
                  CallNative<VM>, RetVoid<VM>, Return<VM>, StructCreate<VM>, AddField<VM>, SetField<VM>, Allocate<VM>,
-                 Deallocate<VM>, WriteMem<VM>, ReadMem<VM>>;
+                 Deallocate<VM>, WriteMem<VM>, ReadMem<VM>, Mov<VM>>;
 #endif

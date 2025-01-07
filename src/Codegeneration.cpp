@@ -59,7 +59,11 @@ auto StatementsVisitor::end(const std::shared_ptr<StatementsNode>& node) -> Visi
   UNUSED(node);
   auto local_count = _local_variables->size();
   for (std::size_t i = 0; i < local_count; ++i) {
+    auto expression_visitor = std::make_shared<ExpressionVisitor>(_local_variables);
     _block.push_back(Push<VM>(_local_variables->at(i).type));
+    _local_variables->at(i).expression->accept(expression_visitor);
+    _block.insert(_block.end(), expression_visitor->code().begin(), expression_visitor->code().end());
+    _block.push_back(Mov<VM>(i, 0));
   }
 
   _block.insert(_block.end(), _statement_visitor->code().begin(), _statement_visitor->code().end());
@@ -92,7 +96,6 @@ auto StatementVisitor::end(const std::shared_ptr<StatementNode>& node) -> VisitR
 
 //-----------------------------------------------------
 auto VariableDeclarationVisitor::begin(const std::shared_ptr<VariableDeclarationNode>& node) -> VisitResult {
-  UNUSED(node);
   _local_variables->push_back({
       .name = node->var_name(),
       .type = VMPrimitive(int(0)),
