@@ -207,7 +207,7 @@ auto Parser::parse_variable_declaration() -> ParserResult {
     if (!accept(TokenKind::SEMICOLON)) {
     }
     _context.pop();
-    return {std::make_shared<VariableDeclarationNode>(var_name, expression.result())};
+    return {std::make_shared<VariableDeclarationNode>(var_name, type.result(), expression.result())};
   }
   return Epsilon;
 }
@@ -242,7 +242,7 @@ auto Parser::parse_constant_declaration() -> ParserResult {
     if (!accept(TokenKind::SEMICOLON)) {
     }
     _context.pop();
-    return {std::make_shared<ConstantDeclarationNode>(var_name, expression.result())};
+    return {std::make_shared<ConstantDeclarationNode>(var_name, type.result(), expression.result())};
   }
   return Epsilon;
 }

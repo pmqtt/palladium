@@ -1,8 +1,9 @@
 #include "ConstantDeclarationNode.h"
 #include "Visitor.h"
 
-ConstantDeclarationNode::ConstantDeclarationNode(const std::string& var_name, const AstPtr& expression)
-    : _var_name(var_name), _expression(expression) {
+ConstantDeclarationNode::ConstantDeclarationNode(const std::string& var_name, const AstPtr& type,
+                                                 const AstPtr& expression)
+    : _var_name(var_name), _type(type), _expression(expression) {
   // Constructor implementation
 }
 

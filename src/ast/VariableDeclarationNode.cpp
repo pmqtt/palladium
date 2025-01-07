@@ -1,8 +1,10 @@
+#include "AstNode.h"
 #include "Visitor.h"
 #include "VariableDeclarationNode.h"
 
-VariableDeclarationNode::VariableDeclarationNode(const std::string& var_name, const AstPtr& expression)
-    : _var_name(var_name), _expression(expression) {
+VariableDeclarationNode::VariableDeclarationNode(const std::string& var_name, const AstPtr& type,
+                                                 const AstPtr& expression)
+    : _var_name(var_name), _type(type), _expression(expression) {
   // Constructor implementation
 }
 

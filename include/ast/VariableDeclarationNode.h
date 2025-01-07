@@ -8,7 +8,7 @@
 class VariableDeclarationNode : public AstNode, public std::enable_shared_from_this<VariableDeclarationNode> {
 public:
   ~VariableDeclarationNode() = default;
-  VariableDeclarationNode(const std::string& var_name, const AstPtr& expression);
+  VariableDeclarationNode(const std::string& var_name, const AstPtr& type, const AstPtr& expression);
   void accept(const std::shared_ptr<Visitor>& v) override;
   auto var_name() const -> const std::string& {
     return _var_name;
@@ -19,6 +19,7 @@ public:
 
 private:
   std::string _var_name;
+  AstPtr _type;
   AstPtr _expression;
 };
 
