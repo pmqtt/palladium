@@ -5,7 +5,7 @@
 #include "AstNode.h"
 #include "Visitor.h"
 
-enum class OperatorKind { OP_LS, OP_ADD, OP_EQ };
+enum class OperatorKind { OP_LS, OP_ADD, OP_EQ, OP_SET };
 
 class OperatorNode : public AstNode, public std::enable_shared_from_this<OperatorNode> {
 public:

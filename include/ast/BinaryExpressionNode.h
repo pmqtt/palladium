@@ -7,10 +7,15 @@
 class BinaryExpressionNode : public AstNode, public std::enable_shared_from_this<BinaryExpressionNode> {
 public:
   ~BinaryExpressionNode() = default;
-  BinaryExpressionNode(const AstPtr& op, const AstPtr& exp);
+  BinaryExpressionNode(const std::string& identifier, const AstPtr& op, const AstPtr& exp);
+  BinaryExpressionNode(const std::string& identifier);
   void accept(const std::shared_ptr<Visitor>& v) override;
+  auto identfier() const -> const std::string& {
+    return _identifier;
+  }
 
 private:
+  std::string _identifier;
   AstPtr _op;
   AstPtr _expression;
 };

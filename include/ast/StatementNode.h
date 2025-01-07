@@ -4,12 +4,7 @@
 #include <memory>
 #include "AstNode.h"
 
-enum class StatementType {
-  VAR_DEC,
-  CONST_DEC,
-  LOOP,
-  RETURN_STATEMENT,
-};
+enum class StatementType { VAR_DEC, CONST_DEC, LOOP, RETURN_STATEMENT, EXPRESSION };
 
 class StatementNode : public AstNode, public std::enable_shared_from_this<StatementNode> {
 public:

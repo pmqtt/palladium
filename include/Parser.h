@@ -40,6 +40,10 @@ public:
 
   auto parse() -> ParserResult;
 
+  auto context() const -> std::stack<Context> {
+    return _context;
+  }
+
 private:
   auto parse_translation_unit() -> ParserResult;
   auto parse_function() -> ParserResult;

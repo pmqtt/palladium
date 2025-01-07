@@ -173,6 +173,18 @@ auto Parser::parse_statement() -> ParserResult {
   if (!return_statement.ok()) {
     return return_statement.error_value();
   }
+  ParserResult expression = parse_expression();
+  if (is_produced(expression)) {
+    if (accept(TokenKind::SEMICOLON)) {
+      _context.pop();
+      return {std::make_shared<StatementNode>(expression.result(), StatementType::EXPRESSION)};
+    }
+    return missing(TokenKind::SEMICOLON);
+  }
+  if (!expression.ok()) {
+    return expression.error_value();
+  }
+
   _context.pop();
   return Epsilon;
 }
@@ -362,7 +374,7 @@ auto Parser::parse_binary_expression() -> ParserResult {
     ParserResult op = parse_operator();
     if (!is_produced(op)) {
       if (op.ok()) {
-        return err("Missing operator");
+        return {std::make_shared<BinaryExpressionNode>(identfier)};
       }
       return op.error_value();
     }
@@ -375,7 +387,7 @@ auto Parser::parse_binary_expression() -> ParserResult {
       return expression.error_value();
     }
     _context.pop();
-    return {std::make_shared<BinaryExpressionNode>(op.result(), expression.result())};
+    return {std::make_shared<BinaryExpressionNode>(identfier, op.result(), expression.result())};
   }
   return Epsilon;
 }
@@ -399,6 +411,9 @@ auto Parser::parse_operator() -> ParserResult {
   }
   if (accept(TokenKind::OP_EQ)) {
     return {std::make_shared<OperatorNode>(OperatorKind::OP_EQ)};
+  }
+  if (accept(TokenKind::OP_SET)) {
+    return {std::make_shared<OperatorNode>(OperatorKind::OP_SET)};
   }
   if (accept(TokenKind::OP_ADD)) {
     return {std::make_shared<OperatorNode>(OperatorKind::OP_ADD)};
