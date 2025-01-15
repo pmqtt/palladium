@@ -1,6 +1,8 @@
 #include "Parser.h"
 #include <cmath>
 #include <memory>
+#include <optional>
+#include <variant>
 #include "ArrayInitializationNode.h"
 #include "BinaryExpressionNode.h"
 #include "ConditionNode.h"
@@ -57,6 +59,33 @@ auto Parser::accept(TokenKind tk) -> bool {
   }
   return false;
 }
+
+auto Parser::sequence(const std::vector<TK>& tokens)
+    -> std::pair<std::optional<ExpectResult>, std::vector<ExpectParserResult>> {
+
+  std::vector<ExpectParserResult> parse_results;
+  for (std::size_t i = 0; i < tokens.size(); ++i) {
+    if (std::holds_alternative<TokenKind>(tokens[i])) {
+      auto token = std::get<TokenKind>(tokens[i]);
+      if (!accept(token)) {
+        return {token, parse_results};
+      }
+      parse_results.emplace_back(_last_token.value());
+    } else {
+      auto pfunc = std::get<PARSE_FUNC>(tokens[i]);
+      auto res = pfunc.parse_func();
+      parse_results.push_back(res);
+      if (!res.ok()) {
+        return {res, parse_results};
+      }
+      if (!res.result() && !pfunc.ALLOW_EPSILON) {
+        return {pfunc.err, parse_results};
+      }
+    }
+  }
+  return {{}, parse_results};
+}
+
 // translation_unit := (function)*
 auto Parser::parse_translation_unit() -> ParserResult {
   _context.push({.context = "tranlsation unit", .rule = RuleType::TRANSLATION_UNIT});
@@ -79,6 +108,9 @@ auto Parser::parse_translation_unit() -> ParserResult {
 }
 // function ::= "fn" identifier "(" ")" "->" type "{" statements "}"
 auto Parser::parse_function() -> ParserResult {
+  auto type_p = [&]() -> ParserResult { return parse_type(); };
+  auto statements_p = [&]() -> ParserResult { return parse_statements(); };
+
   if (!accept(TokenKind::FN)) {
     return Epsilon;
   }
@@ -87,31 +119,23 @@ auto Parser::parse_function() -> ParserResult {
   }
   std::string fname = _last_token.value();
   _context.push({.context = fname, .rule = RuleType::FUNCTION});
-  if (!accept(TokenKind::CLAMP_OPEN)) {
-    return missing(TokenKind::CLAMP_OPEN);
-  }
-  if (!accept(TokenKind::CLAMP_CLOSE)) {
-    return missing(TokenKind::CLAMP_CLOSE);
-  }
-  if (!accept(TokenKind::ARROW)) {
-    return missing(TokenKind::ARROW);
-  }
-  ParserResult type = parse_type();
-  if (!is_produced(type)) {
-    return err("Missing type");
-  }
-  if (!accept(TokenKind::CURLY_OPEN)) {
-    return missing(TokenKind::CURLY_OPEN);
-  }
-  ParserResult statements = parse_statements();
-  if (statements) {
-    if (!accept(TokenKind::CURLY_CLOSE)) {
-      return missing(TokenKind::CURLY_CLOSE);
-    }
+
+  auto [expect_res, epr] = sequence({TokenKind::CLAMP_OPEN, TokenKind::CLAMP_CLOSE, TokenKind::ARROW,
+                                     PARSE_FUNC(type_p, err("Missing Type")), TokenKind::CURLY_OPEN,
+                                     PARSE_FUNC(statements_p), TokenKind::CURLY_CLOSE});
+
+  if (!expect_res) {
     _context.pop();
+    auto type = std::get<ParserResult>(epr[3]);
+    auto statements = std::get<ParserResult>(epr[5]);
     return {std::make_shared<FunctionNode>(fname, type.result(), statements.result())};
   }
-  return statements.error_value();
+
+  if (std::holds_alternative<TokenKind>(*expect_res)) {
+    return missing(std::get<TokenKind>(*expect_res));
+  } else {
+    return std::get<ParserResult>(*expect_res).error_value();
+  }
 }
 
 auto Parser::parse_statements() -> ParserResult {
@@ -190,99 +214,83 @@ auto Parser::parse_statement() -> ParserResult {
 }
 
 auto Parser::parse_variable_declaration() -> ParserResult {
+  auto type_p = [&]() -> ParserResult { return parse_type(); };
+  auto expression_p = [&]() -> ParserResult { return parse_expression(); };
   if (accept(TokenKind::LET)) {
     if (!accept(TokenKind::IDENTIFIER)) {
       return missing(TokenKind::IDENTIFIER);
     }
     std::string var_name = _last_token.value();
     _context.push({.context = var_name, .rule = RuleType::VAR_DEC});
-    if (!accept(TokenKind::COLON)) {
-      return missing(TokenKind::COLON);
+
+    auto [expect_res, epr] = sequence({TokenKind::COLON, PARSE_FUNC(type_p, err("Missing type")), TokenKind::OP_SET,
+                                       PARSE_FUNC(expression_p, err("Missing expression")), TokenKind::SEMICOLON});
+
+    if (!expect_res) {
+      _context.pop();
+      auto type = std::get<ParserResult>(epr[1]);
+      auto exp = std::get<ParserResult>(epr[3]);
+      return {std::make_shared<VariableDeclarationNode>(var_name, type.result(), exp.result())};
     }
-    ParserResult type = parse_type();
-    if (!is_produced(type)) {
-      if (!type.ok()) {
-        return type.error_value();
-      }
-      return err("Missing type");
+    if (std::holds_alternative<TokenKind>(*expect_res)) {
+      return missing(std::get<TokenKind>(*expect_res));
+    } else {
+      return std::get<ParserResult>(*expect_res).error_value();
     }
-    if (!accept(TokenKind::OP_SET)) {
-      return missing(TokenKind::OP_SET);
-    }
-    ParserResult expression = parse_expression();
-    if (!is_produced(expression)) {
-      if (!expression.ok()) {
-        return expression.error_value();
-      }
-      return err("Missing expression");
-    }
-    if (!accept(TokenKind::SEMICOLON)) {
-    }
-    _context.pop();
-    return {std::make_shared<VariableDeclarationNode>(var_name, type.result(), expression.result())};
   }
   return Epsilon;
 }
 
 auto Parser::parse_constant_declaration() -> ParserResult {
+  auto type_p = [&]() -> ParserResult { return parse_type(); };
+  auto expression_p = [&]() -> ParserResult { return parse_expression(); };
   if (accept(TokenKind::CONST)) {
     if (!accept(TokenKind::IDENTIFIER)) {
       return missing(TokenKind::IDENTIFIER);
     }
     std::string var_name = _last_token.value();
     _context.push({.context = var_name, .rule = RuleType::VAR_DEC});
-    if (!accept(TokenKind::COLON)) {
-      return missing(TokenKind::COLON);
+
+    auto [expect_res, epr] = sequence({TokenKind::COLON, PARSE_FUNC(type_p, err("Missing type")), TokenKind::OP_SET,
+                                       PARSE_FUNC(expression_p, err("Missing expression")), TokenKind::SEMICOLON});
+
+    if (!expect_res) {
+      _context.pop();
+      auto type = std::get<ParserResult>(epr[1]);
+      auto exp = std::get<ParserResult>(epr[3]);
+      return {std::make_shared<VariableDeclarationNode>(var_name, type.result(), exp.result())};
     }
-    ParserResult type = parse_type();
-    if (!is_produced(type)) {
-      if (!type.ok()) {
-        return type.error_value();
-      }
-      return err("Missing type");
+    if (std::holds_alternative<TokenKind>(*expect_res)) {
+      return missing(std::get<TokenKind>(*expect_res));
+    } else {
+      return std::get<ParserResult>(*expect_res).error_value();
     }
-    if (!accept(TokenKind::OP_SET)) {
-      return missing(TokenKind::OP_SET);
-    }
-    ParserResult expression = parse_expression();
-    if (!is_produced(expression)) {
-      if (!expression.ok()) {
-        return expression.error_value();
-      }
-      return err("Missing expression");
-    }
-    if (!accept(TokenKind::SEMICOLON)) {
-    }
-    _context.pop();
-    return {std::make_shared<ConstantDeclarationNode>(var_name, type.result(), expression.result())};
   }
   return Epsilon;
 }
 
 auto Parser::parse_loop() -> ParserResult {
+  auto condition_p = [&]() -> ParserResult { return parse_condition(); };
+  auto statements_p = [&]() -> ParserResult { return parse_statements(); };
+
   if (accept(TokenKind::WHILE)) {
     _context.push({.context = "while", .rule = RuleType::LOOP});
-    if (!accept(TokenKind::CLAMP_OPEN)) {
-      return missing(TokenKind::CLAMP_OPEN);
+    auto [expect_res, epr] =
+        sequence({TokenKind::CLAMP_OPEN, PARSE_FUNC(condition_p, err("Missing condition")), TokenKind::CLAMP_CLOSE,
+                  TokenKind::CURLY_OPEN, PARSE_FUNC(statements_p), TokenKind::CURLY_CLOSE});
+
+    if (!expect_res) {
+      _context.pop();
+      auto condition = std::get<ParserResult>(epr[1]);
+      auto statements = std::get<ParserResult>(epr[4]);
+      return {std::make_shared<LoopNode>(condition.result(), statements.result())};
     }
-    ParserResult condition = parse_condition();
-    if (!is_produced(condition)) {
+
+    if (std::holds_alternative<TokenKind>(*expect_res)) {
+      return missing(std::get<TokenKind>(*expect_res));
+    } else {
+      return std::get<ParserResult>(*expect_res).error_value();
     }
-    if (!accept(TokenKind::CLAMP_CLOSE)) {
-      return missing(TokenKind::CLAMP_CLOSE);
-    }
-    if (!accept(TokenKind::CURLY_OPEN)) {
-      return missing(TokenKind::CURLY_OPEN);
-    }
-    ParserResult statements = parse_statements();
-    if (statements) {
-      if (accept(TokenKind::CURLY_CLOSE)) {
-        _context.pop();
-        return {std::make_shared<LoopNode>(condition.result(), statements.result())};
-      }
-      return missing(TokenKind::CURLY_CLOSE);
-    }
-    return statements.error_value();
   }
 
   return Epsilon;

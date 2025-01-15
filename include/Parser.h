@@ -3,6 +3,7 @@
 #include "ast/AstNode.h"
 #include "Lexer.h"
 #include "Util.h"
+#include <functional>
 #include <string>
 #include <stack>
 
@@ -34,6 +35,24 @@ struct Context {
   RuleType rule;
 };
 
+struct PARSE_FUNC {
+  PARSE_FUNC(const std::function<ParserResult()>& pfunc)
+      : ALLOW_EPSILON(true), parse_func(pfunc), err(::err("Unknown error: PARSE_FUNC")) {
+  }
+
+  PARSE_FUNC(const std::function<ParserResult()>& pfunc, const Error& e)
+      : ALLOW_EPSILON(false), parse_func(pfunc), err(e) {
+  }
+
+  bool ALLOW_EPSILON;
+  std::function<ParserResult()> parse_func;
+  Error err;
+};
+
+using TK = std::variant<TokenKind, PARSE_FUNC>;
+using ExpectResult = std::variant<TokenKind, ParserResult>;
+using ExpectParserResult = std::variant<std::string, ParserResult>;
+
 class Parser {
 public:
   Parser(const std::string& code);
@@ -61,6 +80,8 @@ private:
   auto parse_type() -> ParserResult;
 
   auto accept(TokenKind tk) -> bool;
+  auto sequence(const std::vector<TK>& tokens)
+      -> std::pair<std::optional<ExpectResult>, std::vector<ExpectParserResult>>;
 
 private:
   Lexer _lexer;
