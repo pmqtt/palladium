@@ -697,10 +697,12 @@ private:
   std::size_t _reg_adr;
 };
 
-template <class VM>
-using InstructionType =
+/*template <class VM>
+structing InstructionType =
     std::variant<Load<VM>, CLoad<VM>, INDLoad<VM>, SLoad<VM>, Store<VM>, INDStore<VM>, Add<VM>, CAdd<VM>, INDAdd<VM>,
                  If<VM>, Goto<VM>, Halt<VM>, Push<VM>, Pop<VM>, Print<VM>, PrintRegStructField<VM>, Call<VM>,
                  CallNative<VM>, RetVoid<VM>, Return<VM>, StructCreate<VM>, AddField<VM>, SetField<VM>, Allocate<VM>,
                  Deallocate<VM>, WriteMem<VM>, ReadMem<VM>, Mov<VM>>;
+
+*/
 #endif

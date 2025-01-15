@@ -66,22 +66,28 @@ struct StackFrame {
 template <class POLICY> class VirtualMachine {
 public:
   using P = POLICY;
-  using InstructionTypeV = InstructionType<VirtualMachine<POLICY>>;
+  using InstructionTypeV = Instruction<VirtualMachine<POLICY>>;
 
 public:
-  static auto make(const std::vector<InstructionTypeV>& program) -> VirtualMachine<P> {
+  static auto make(const std::vector<InstructionTypeV*>& program) -> VirtualMachine<P> {
     return VirtualMachine<P>(program);
+  }
+
+  ~VirtualMachine() {
+    for (auto& i : _program) {
+      delete i;
+    }
   }
 
   VirtualMachine(std::size_t mem_size = 1024 * 1024 * 1024)
       : _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1), _memory(mem_size) {
   }
 
-  VirtualMachine(const std::vector<InstructionTypeV>& program, std::size_t mem_size = 1024 * 1024 * 1024)
+  VirtualMachine(const std::vector<InstructionTypeV*>& program, std::size_t mem_size = 1024 * 1024 * 1024)
       : _program(program), _registers(10, 0), _pc(0), _stack(10, 0), _sp(-1), _memory(mem_size) {
   }
 
-  void add_function(const std::string fname, const std::vector<InstructionTypeV>& code, uint8_t arg_count) {
+  void add_function(const std::string fname, const std::vector<InstructionTypeV*>& code, uint8_t arg_count) {
 
     _function_section.push_back({fname, arg_count, _program.size()});
     std::copy(code.cbegin(), code.cend(), std::back_inserter(_program));
@@ -95,7 +101,7 @@ public:
     panic("function " + fname + " not exist");
   }
 
-  void add_program(const std::vector<InstructionTypeV>& program) {
+  void add_program(const std::vector<InstructionTypeV*>& program) {
     _program = program;
   }
 
@@ -119,7 +125,7 @@ public:
       old_pc = _pc;
       std::visit(
           [&](auto& instruction) {
-            InstructionResult res = instruction.execute(this);
+            InstructionResult res = instruction->execute(this);
             res.error([](const Error& err) {
               std::cerr << "Instruction failed: " << err.msg() << "\n";
               std::abort();
@@ -136,7 +142,7 @@ public:
       old_pc = _pc;
       std::visit(
           [&](auto& instruction) {
-            InstructionResult res = instruction.execute(this);
+            InstructionResult res = instruction->execute(this);
             res.error([](const Error& err) {
               std::cerr << "Instruction failed: " << err.msg() << "\n";
               std::abort();
@@ -248,13 +254,13 @@ public:
   auto to_string() const -> std::string {
     std::string ss;
     for (auto& inst : _program) {
-      std::visit([&](auto& instruction) { ss += instruction.to_string() + "\n"; }, inst);
+      std::visit([&](auto& instruction) { ss += instruction->to_string() + "\n"; }, inst);
     }
     return ss;
   }
 
 private:
-  std::vector<InstructionTypeV> _program;
+  std::vector<InstructionTypeV*> _program;
   std::vector<VMType> _registers;
   std::size_t _pc;
   std::vector<VMType> _stack;
