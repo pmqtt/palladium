@@ -11,7 +11,7 @@
 
 using VM = VirtualMachine<AggresivPolicy>;
 TranslationUnitVisitor::TranslationUnitVisitor() : _vm(std::make_shared<VirtualMachine<AggresivPolicy>>()) {
-  _vm->add_program({Call<VM>("main"), Halt<VM>()});
+  _vm->add_program({new Call<VM>("main"), new Halt<VM>()});
 }
 
 auto TranslationUnitVisitor::begin(const std::shared_ptr<TranslationUnitNode>& node) -> VisitResult {
@@ -60,10 +60,10 @@ auto StatementsVisitor::end(const std::shared_ptr<StatementsNode>& node) -> Visi
   auto local_count = _local_variables->size();
   for (std::size_t i = 0; i < local_count; ++i) {
     auto expression_visitor = std::make_shared<ExpressionVisitor>(_local_variables);
-    _block.push_back(Push<VM>(_local_variables->at(i).type));
+    _block.push_back(new Push<VM>(_local_variables->at(i).type));
     _local_variables->at(i).expression->accept(expression_visitor);
     _block.insert(_block.end(), expression_visitor->code().begin(), expression_visitor->code().end());
-    _block.push_back(Mov<VM>(i, 0));
+    _block.push_back(new Mov<VM>(i, 0));
   }
 
   _block.insert(_block.end(), _statement_visitor->code().begin(), _statement_visitor->code().end());
@@ -127,7 +127,7 @@ auto ReturnStatementVisitor::visit(const std::shared_ptr<ReturnStatementNode>& n
 auto ReturnStatementVisitor::end(const std::shared_ptr<ReturnStatementNode>& node) -> VisitResult {
   UNUSED(node);
   _code.insert(_code.end(), _expression_visitor->code().begin(), _expression_visitor->code().end());
-  _code.push_back(Return<VM>(0));
+  _code.push_back(new Return<VM>(0));
   return true;
 }
 
@@ -135,7 +135,7 @@ auto ReturnStatementVisitor::end(const std::shared_ptr<ReturnStatementNode>& nod
 auto ExpressionVisitor::begin(const std::shared_ptr<ExpressionNode>& node) -> VisitResult {
   switch (node->kind()) {
   case ExpressionKind::CONST_INT:
-    _code.push_back(CLoad<VM>(std::atoi(node->constante().c_str())));
+    _code.push_back(new CLoad<VM>(std::atoi(node->constante().c_str())));
     break;
   case ExpressionKind::CONST_DOUBLE:
   case ExpressionKind::CONST_TEXT:

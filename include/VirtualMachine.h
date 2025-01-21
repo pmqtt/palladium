@@ -123,15 +123,11 @@ public:
     std::size_t old_pc = 0;
     do {
       old_pc = _pc;
-      std::visit(
-          [&](auto& instruction) {
-            InstructionResult res = instruction->execute(this);
-            res.error([](const Error& err) {
-              std::cerr << "Instruction failed: " << err.msg() << "\n";
-              std::abort();
-            });
-          },
-          _program[_pc]);
+      InstructionResult res = _program[_pc]->execute(this);
+      res.error([](const Error& err) {
+        std::cerr << "Instruction failed: " << err.msg() << "\n";
+        std::abort();
+      });
     } while (_pc != old_pc);
   }
 
@@ -140,15 +136,11 @@ public:
     do {
       std::string cmd;
       old_pc = _pc;
-      std::visit(
-          [&](auto& instruction) {
-            InstructionResult res = instruction->execute(this);
-            res.error([](const Error& err) {
-              std::cerr << "Instruction failed: " << err.msg() << "\n";
-              std::abort();
-            });
-          },
-          _program[_pc]);
+      InstructionResult res = _program[_pc]->execute(this);
+      res.error([](const Error& err) {
+        std::cerr << "Instruction failed: " << err.msg() << "\n";
+        std::abort();
+      });
       std::cin >> cmd;
       if (cmd == "r") {
         print_registers();
@@ -254,7 +246,7 @@ public:
   auto to_string() const -> std::string {
     std::string ss;
     for (auto& inst : _program) {
-      std::visit([&](auto& instruction) { ss += instruction->to_string() + "\n"; }, inst);
+      ss += inst->to_string() + "\n";
     }
     return ss;
   }

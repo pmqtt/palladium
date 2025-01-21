@@ -10,7 +10,7 @@
 #include "VirtualMachine.h"
 
 using VMPtr = std::shared_ptr<VirtualMachine<AggresivPolicy>>;
-using Code = std::vector<InstructionType<VirtualMachine<AggresivPolicy>>>;
+using Code = std::vector<Instruction<VirtualMachine<AggresivPolicy>>*>;
 
 struct LocalVariableContainer {
   std::string name;
