@@ -42,6 +42,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 add_executable("${CMAKE_PROJECT_NAME}" $<TARGET_OBJECTS:OBJECT_LIB>)
+add_executable(pasm $<TARGET_OBJECTS:OBJECT_LIB>)
 
 add_subdirectory(src)
 enable_testing()

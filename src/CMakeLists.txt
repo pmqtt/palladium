@@ -13,6 +13,5 @@ endif()
 
 target_include_directories(OBJECT_LIB PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/ast)
 
-target_sources("${CMAKE_PROJECT_NAME}" PRIVATE
-    main.cpp
-)
+add_subdirectory(pasm)
+
