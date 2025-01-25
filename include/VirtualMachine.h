@@ -11,12 +11,17 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <utility>
 #include <variant>
 
 struct FunctionEntry {
   FunctionEntry(std::string name, uint8_t arg_count, std::size_t adr)
       : _name(std::move(name)), _argument_count(arg_count), _address(adr) {
+  }
+
+  FunctionEntry(std::string name, uint8_t arg_count, const std::string& label)
+      : _name(std::move(name)), _argument_count(arg_count), _label(label) {
   }
 
   auto name() const -> const std::string& {
@@ -28,11 +33,18 @@ struct FunctionEntry {
   auto address() const -> std::size_t {
     return _address;
   }
+  auto label() const -> const std::string& {
+    return _label;
+  }
+  void address(std::size_t adr) {
+    _address = adr;
+  }
 
 private:
   std::string _name;
   uint8_t _argument_count;
   std::size_t _address;
+  std::string _label;
 };
 
 template <class VM> using NativeFunction = std::function<ResultOr<bool>(VM* vm, const std::vector<VMType>&)>;
